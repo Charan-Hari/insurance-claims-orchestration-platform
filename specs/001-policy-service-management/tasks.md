@@ -70,12 +70,12 @@ shared dependency).
 
 **Independent Test**: Underwriter transitions draft -> pending_underwriting -> 200 + audit row created. Invalid transition (active -> draft) -> 400, no audit row, no status change. Customer attempt -> 403.
 
-- [ ] T025 [P] [US3] Unit test: services/policy/tests/unit/test_status_transitions.py - valid/invalid transition matrix per spec Clarifications
-- [ ] T026 [P] [US3] Contract test: services/policy/tests/contract/test_update_status_contract.py
-- [ ] T027 [US3] Integration test: services/policy/tests/integration/test_update_policy_status.py - valid transition + audit row atomicity, invalid transition rejected with no partial state, customer denied (per spec Acceptance Scenarios 3.1-3.2 and Edge Cases)
-- [ ] T028 [US3] Implement update_policy_status in services/policy/src/policy_service/services/policy_service.py: single DB transaction wrapping status update + audit insert, rollback both on any failure
-- [ ] T029 [US3] Implement PATCH /policies/{id}/status endpoint in services/policy/src/policy_service/api/routes.py with role dependency (underwriter, admin only)
-- [ ] T030 [US3] Run tests T025-T027, confirm green, explicitly verify no audit row exists after a rejected invalid transition
+- [x] T025 [P] [US3] Unit test: services/policy/tests/unit/test_status_transitions.py - valid/invalid transition matrix per spec Clarifications
+- [x] T026 [P] [US3] Contract test: services/policy/tests/contract/test_update_status_contract.py
+- [x] T027 [US3] Integration test: services/policy/tests/integration/test_update_policy_status.py - valid transition + audit row atomicity, invalid transition rejected with no partial state, customer denied (per spec Acceptance Scenarios 3.1-3.2 and Edge Cases)
+- [x] T028 [US3] Implement update_policy_status in services/policy/src/policy_service/services/policy_service.py: single DB transaction wrapping status update + audit insert, rollback both on any failure
+- [x] T029 [US3] Implement PATCH /policies/{id}/status endpoint in services/policy/src/policy_service/api/routes.py with role dependency (underwriter, admin only)
+- [x] T030 [US3] Run tests T025-T027, confirm green, explicitly verify no audit row exists after a rejected invalid transition
 
 **Checkpoint**: All three user stories complete and independently testable. Full FR-001 through FR-007 coverage achieved.
 
