@@ -6,13 +6,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from claims_service.auth.jwt import CurrentUser, bearer_scheme, require_roles
 from claims_service.db.session import get_db_session
-from claims_service.schemas.claim import ClaimCreate, ClaimRead
+from claims_service.schemas.claim import ClaimCreate, ClaimRead, ClaimStatusUpdate
 from claims_service.services.claim_service import (
 	can_view_claim,
 	can_view_policyholder,
 	create_claim,
 	get_claim_by_id,
+	InvalidStatusTransition,
 	list_claims_for_policyholder,
+	update_claim_status,
 )
 from claims_service.services.policy_client import PolicyNotActive, PolicyNotFound, PolicyServiceUnavailable
 
@@ -72,3 +74,30 @@ async def list_claims_endpoint(
 	if not can_view_policyholder(policyholder_id, current_user):
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Claim not found")
 	return await list_claims_for_policyholder(session, policyholder_id)
+
+
+update_status_authorization = require_roles("adjuster", "admin")
+
+
+@router.patch(
+	"/claims/{claim_id}/status",
+	response_model=ClaimRead,
+	responses={
+		400: {"description": "Invalid status transition"},
+		403: {"description": "Access denied"},
+		404: {"description": "Claim not found"},
+	},
+)
+async def update_claim_status_endpoint(
+	claim_id: uuid.UUID,
+	status_update: ClaimStatusUpdate,
+	session: AsyncSession = Depends(get_db_session),
+	current_user: CurrentUser = Depends(update_status_authorization),
+) -> ClaimRead:
+	try:
+		claim = await update_claim_status(session, claim_id, status_update.status, current_user.subject)
+	except InvalidStatusTransition as exc:
+		raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+	if claim is None:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Claim not found")
+	return claim
