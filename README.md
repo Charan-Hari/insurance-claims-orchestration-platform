@@ -1,6 +1,7 @@
 # Insurance Claims Orchestration Platform
 
 [![Policy Service CI](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/policy-service-ci.yml/badge.svg)](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/policy-service-ci.yml)
+[![Claims Service CI](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/claims-service-ci.yml/badge.svg)](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/claims-service-ci.yml)
 
 An insurance claims orchestration platform built with spec-driven development (GitHub Spec-Kit), where AI coding agents direct implementation under human review.
 
@@ -13,7 +14,7 @@ This project demonstrates enterprise-grade delivery practices for AI-assisted en
 | Service | Status | Evidence |
 | --- | --- | --- |
 | Policy Service | **COMPLETE** | All 3 user stories, 7 functional requirements, 21/21 tests passing, Keycloak RBAC, atomic audit trail, structured logging, Docker Compose runtime |
-| Claims Service | **PLANNED** | Not implemented |
+| Claims Service | **COMPLETE** | All 3 user stories, 8 functional requirements, 22/22 tests passing, resilient cross-service call to Policy Service (timeout+retry+backoff), atomic audit trail, structured logging, Docker Compose runtime, verified live end-to-end cross-service proof |
 | Orchestrator | **PLANNED** | Not implemented |
 | Legacy Adapter | **PLANNED** | Not implemented |
 | Payments Integration | **PLANNED** | Not implemented |
@@ -22,13 +23,15 @@ This project demonstrates enterprise-grade delivery practices for AI-assisted en
 
 The [Policy Service specification](specs/001-policy-service-management/) is the reference example of the complete Spec-Kit workflow, including [spec.md](specs/001-policy-service-management/spec.md), [plan.md](specs/001-policy-service-management/plan.md), [tasks.md](specs/001-policy-service-management/tasks.md), and the pinned [OpenAPI contract](specs/001-policy-service-management/contracts/policy-api.yaml).
 
+The [Claims Service specification](specs/002-claims-service-management/) follows the same workflow and additionally demonstrates cross-service integration: [spec.md](specs/002-claims-service-management/spec.md), [plan.md](specs/002-claims-service-management/plan.md), [tasks.md](specs/002-claims-service-management/tasks.md), and the pinned [OpenAPI contract](specs/002-claims-service-management/contracts/claims-api.yaml).
+
 ## Architecture
 
 ```mermaid
 flowchart LR
 		UI["Angular Frontend\nPLANNED"] --> ORCH["Orchestrator\nPLANNED"]
 		ORCH --> POLICY["Policy Service\nCOMPLETE"]
-		ORCH --> CLAIMS["Claims Service\nPLANNED"]
+		ORCH --> CLAIMS["Claims Service\nCOMPLETE"]
 		ORCH --> PAYMENTS["Payments Integration\nPLANNED"]
 		LEGACY["Legacy Adapter\nPLANNED"] --> ORCH
 		COPILOT["Copilot/RAG Service\nPLANNED"] --> ORCH
@@ -39,7 +42,8 @@ flowchart LR
 		classDef complete fill:#dcfce7,stroke:#15803d,color:#14532d
 		classDef planned fill:#e5e7eb,stroke:#6b7280,color:#374151
 		class POLICY complete
-		class UI,ORCH,CLAIMS,PAYMENTS,LEGACY,COPILOT,KEYCLOAK,POLICYDB,CLAIMSDB planned
+		class CLAIMS complete
+		class UI,ORCH,PAYMENTS,LEGACY,COPILOT,KEYCLOAK,POLICYDB,CLAIMSDB planned
 ```
 
 The multi-service monorepo keeps services independently deployable while sharing one delivery process, constitution, and CI boundary.
@@ -90,7 +94,7 @@ Every AI-generated change was reviewed before commit. The [commit history](https
 | Service | Language | Framework / Runtime | Data / Integration | Status |
 | --- | --- | --- | --- | --- |
 | Policy Service | Python 3.12 | FastAPI, SQLAlchemy 2.0 async, Alembic | PostgreSQL 16, Keycloak | Complete |
-| Claims Service | Python 3.12 | FastAPI | PostgreSQL 16 | Planned |
+| Claims Service | Python 3.12 | FastAPI, SQLAlchemy 2.0 async, Alembic | PostgreSQL 16, Keycloak, live HTTP call to Policy Service | Complete |
 | Orchestrator | Python 3.12 | FastAPI | Service APIs, saga coordination | Planned |
 | Legacy Adapter | Python 3.12 | FastAPI, adapter clients | Legacy feeds and service APIs | Planned |
 | Payments Integration | TypeScript | Node.js integration service | Payment provider API | Planned |
