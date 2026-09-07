@@ -7,7 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from claims_service.auth.jwt import CurrentUser, bearer_scheme, require_roles
 from claims_service.db.session import get_db_session
 from claims_service.schemas.claim import ClaimCreate, ClaimRead
-from claims_service.services.claim_service import create_claim
+from claims_service.services.claim_service import (
+	can_view_claim,
+	can_view_policyholder,
+	create_claim,
+	get_claim_by_id,
+	list_claims_for_policyholder,
+)
 from claims_service.services.policy_client import PolicyNotActive, PolicyNotFound, PolicyServiceUnavailable
 
 
@@ -40,3 +46,29 @@ async def create_claim_endpoint(
 		raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 	except PolicyServiceUnavailable as exc:
 		raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+
+
+retrieve_claim_authorization = require_roles("customer", "admin", "agent", "adjuster")
+
+
+@router.get("/claims/{claim_id}", response_model=ClaimRead)
+async def get_claim_endpoint(
+	claim_id: uuid.UUID,
+	session: AsyncSession = Depends(get_db_session),
+	current_user: CurrentUser = Depends(retrieve_claim_authorization),
+) -> ClaimRead:
+	claim = await get_claim_by_id(session, claim_id)
+	if claim is None or not can_view_claim(claim, current_user):
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Claim not found")
+	return claim
+
+
+@router.get("/policyholders/{policyholder_id}/claims", response_model=list[ClaimRead])
+async def list_claims_endpoint(
+	policyholder_id: uuid.UUID,
+	session: AsyncSession = Depends(get_db_session),
+	current_user: CurrentUser = Depends(retrieve_claim_authorization),
+) -> list[ClaimRead]:
+	if not can_view_policyholder(policyholder_id, current_user):
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Claim not found")
+	return await list_claims_for_policyholder(session, policyholder_id)
