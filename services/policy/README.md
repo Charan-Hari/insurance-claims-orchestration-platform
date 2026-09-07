@@ -92,9 +92,43 @@ Valid status transitions are enforced by the service. Every accepted transition 
 
 ## Tests
 
-From the repository root, with Docker available for the integration tests:
+From the repository root, with Docker available for the integration tests, run the complete suite:
 
 ```sh
 cd services/policy
 DATABASE_URL=postgresql+asyncpg://user:pass@localhost/db pytest -q
 ```
+
+Run the test layers independently when diagnosing a failure:
+
+```sh
+pytest -q tests/unit
+pytest -q tests/contract
+pytest -q tests/integration
+```
+
+## Environment Variables
+
+| Variable | Used by | Local example | Description |
+| --- | --- | --- | --- |
+| `POSTGRES_USER` | Compose/PostgreSQL | `policy_user` | PostgreSQL username. |
+| `POSTGRES_PASSWORD` | Compose/PostgreSQL | `policy_dev_password` | Local-only PostgreSQL password. |
+| `POSTGRES_DB` | Compose/PostgreSQL | `policy_db` | Policy database name. |
+| `KEYCLOAK_ADMIN_USERNAME` | Compose/Keycloak | `admin` | Local Keycloak bootstrap administrator. |
+| `KEYCLOAK_ADMIN_PASSWORD` | Compose/Keycloak | `keycloak_dev_password` | Local-only Keycloak administrator password. |
+| `KEYCLOAK_REALM` | Compose/Policy Service | `policy` | Keycloak realm used by the service. |
+| `KEYCLOAK_AUDIENCE` | Compose/Policy Service | `policy-service` | JWT audience and local client ID. |
+| `DATABASE_URL` | Policy Service/tests | `postgresql+asyncpg://...` | Async PostgreSQL connection URL. Compose builds this from the PostgreSQL variables. |
+| `KEYCLOAK_ISSUER` | Policy Service | `http://keycloak:8080/realms/policy` | Keycloak issuer URL used for JWT validation. |
+
+Copy `.env.example` to `.env` for the Compose defaults. Never use these values outside local development, and never commit `.env` or production secrets.
+
+## Troubleshooting
+
+**Keycloak is not healthy:** Check `docker compose logs keycloak`. Confirm the container has finished its first startup and that port 8080 is free. The readiness probe uses Keycloak's management endpoint on port 9000 and requires `KC_HEALTH_ENABLED=true`.
+
+**Policy Service is not starting:** Check `docker compose logs policy-service`. The container waits for PostgreSQL and Keycloak, runs `alembic upgrade head`, and only then starts Uvicorn. A migration error usually means the database volume contains an incomplete or incompatible schema; for disposable local data, run `docker compose down -v` and start again.
+
+**JWT requests return 401:** Verify `KEYCLOAK_ISSUER` matches the realm URL, `KEYCLOAK_AUDIENCE` matches the client ID, and that the token contains a matching `kid`, issuer, audience, and realm role.
+
+**Requests return 403:** Confirm the user has the required realm role. Agents and underwriters can create policies, underwriters and admins can update status, and customers can only access their own policyholder ID.

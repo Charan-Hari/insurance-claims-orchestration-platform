@@ -1,0 +1,279 @@
+openapi: 3.1.0
+info:
+  title: Policy Service
+  version: 0.1.0
+paths:
+  /policies:
+    post:
+      summary: Create Policy Endpoint
+      operationId: create_policy_endpoint_policies_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicyCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /policies/{policy_id}:
+    get:
+      summary: Get Policy Endpoint
+      operationId: get_policy_endpoint_policies__policy_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: policy_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Policy Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /policyholders/{policyholder_id}/policies:
+    get:
+      summary: List Policies Endpoint
+      operationId: list_policies_endpoint_policyholders__policyholder_id__policies_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: policyholder_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Policyholder Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PolicyRead'
+                title: Response List Policies Endpoint Policyholders  Policyholder
+                  Id  Policies Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /policies/{policy_id}/status:
+    patch:
+      summary: Update Policy Status Endpoint
+      operationId: update_policy_status_endpoint_policies__policy_id__status_patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: policy_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Policy Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicyStatusUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyRead'
+        '400':
+          description: Invalid status transition
+        '403':
+          description: Access denied
+        '404':
+          description: Policy not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    PolicyCreate:
+      properties:
+        policyholder_id:
+          type: string
+          format: uuid
+          title: Policyholder Id
+        coverage_type:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Coverage Type
+        coverage_limits:
+          additionalProperties: true
+          type: object
+          title: Coverage Limits
+        effective_date:
+          type: string
+          format: date
+          title: Effective Date
+        expiry_date:
+          type: string
+          format: date
+          title: Expiry Date
+        premium_amount:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d{0,2}0*$
+          - type: 'null'
+          title: Premium Amount
+      type: object
+      required:
+      - policyholder_id
+      - coverage_type
+      - coverage_limits
+      - effective_date
+      - expiry_date
+      title: PolicyCreate
+    PolicyRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        policyholder_id:
+          type: string
+          format: uuid
+          title: Policyholder Id
+        coverage_type:
+          type: string
+          title: Coverage Type
+        coverage_limits:
+          additionalProperties: true
+          type: object
+          title: Coverage Limits
+        effective_date:
+          type: string
+          format: date
+          title: Effective Date
+        expiry_date:
+          type: string
+          format: date
+          title: Expiry Date
+        status:
+          $ref: '#/components/schemas/PolicyStatus'
+        premium_amount:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Premium Amount
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - id
+      - policyholder_id
+      - coverage_type
+      - coverage_limits
+      - effective_date
+      - expiry_date
+      - status
+      - premium_amount
+      - created_at
+      - updated_at
+      title: PolicyRead
+    PolicyStatus:
+      type: string
+      enum:
+      - draft
+      - pending_underwriting
+      - active
+      - cancelled
+      - expired
+      - renewed
+      title: PolicyStatus
+    PolicyStatusUpdate:
+      properties:
+        status:
+          $ref: '#/components/schemas/PolicyStatus'
+      type: object
+      required:
+      - status
+      title: PolicyStatusUpdate
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      scheme: bearer

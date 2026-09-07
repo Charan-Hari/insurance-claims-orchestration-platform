@@ -1,4 +1,5 @@
 import uuid
+import logging
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +9,9 @@ from policy_service.models.audit import AuditRecord
 from policy_service.models.policy import PolicyStatus
 from policy_service.models.policy import Policy
 from policy_service.schemas.policy import PolicyCreate
+
+
+logger = logging.getLogger("policy_service")
 
 
 class InvalidStatusTransition(ValueError):
@@ -74,6 +78,16 @@ async def update_policy_status(
         await session.rollback()
         raise
     await session.refresh(policy)
+    logger.info(
+        "update_policy_status",
+        extra={
+            "action": "update_policy_status",
+            "actor_id": actor_id,
+            "policy_id": str(policy.id),
+            "old_status": old_status.value,
+            "new_status": target_status.value,
+        },
+    )
     return policy
 
 

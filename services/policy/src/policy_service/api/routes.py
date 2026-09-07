@@ -1,4 +1,5 @@
 import uuid
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +18,7 @@ from policy_service.services.policy_service import (
 )
 
 router = APIRouter()
+logger = logging.getLogger("policy_service")
 create_policy_authorization = require_roles("agent", "underwriter")
 retrieve_policy_authorization = require_roles("customer", "admin", "agent", "underwriter")
 update_status_authorization = require_roles("underwriter", "admin")
@@ -26,9 +28,18 @@ update_status_authorization = require_roles("underwriter", "admin")
 async def create_policy_endpoint(
 	policy_data: PolicyCreate,
 	session: AsyncSession = Depends(get_db_session),
-	_: CurrentUser = Depends(create_policy_authorization),
+	current_user: CurrentUser = Depends(create_policy_authorization),
 ) -> PolicyRead:
-	return await create_policy(session, policy_data)
+	policy = await create_policy(session, policy_data)
+	logger.info(
+		"create_policy",
+		extra={
+			"action": "create_policy",
+			"actor_id": current_user.subject,
+			"policy_id": str(policy.id),
+		},
+	)
+	return policy
 
 
 @router.get("/policies/{policy_id}", response_model=PolicyRead)

@@ -81,11 +81,11 @@ shared dependency).
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T031 [P] Export OpenAPI schema from running service to contracts/policy-api.yaml, commit as the pinned contract artifact
-- [ ] T032 [P] Add structured logging (request id, actor id, action) to all endpoints per constitution audit/observability requirements
-- [ ] T033 [P] Write services/policy/README.md: local run instructions (docker-compose), environment variables required, how to run tests
-- [ ] T034 Add services/policy to root docker-compose.yml with its own Postgres service and environment configuration
-- [ ] T035 Run full test suite (unit + integration + contract) end to end, confirm all green before marking feature complete
+- [x] T031 [P] Export OpenAPI schema from running service to contracts/policy-api.yaml, commit as the pinned contract artifact
+- [x] T032 [P] Add structured logging (request id, actor id, action) to all endpoints per constitution audit/observability requirements
+- [x] T033 [P] Write services/policy/README.md: local run instructions (docker-compose), environment variables required, how to run tests
+- [x] T034 Add services/policy to root docker-compose.yml with its own Postgres service and environment configuration
+- [x] T035 Run full test suite (unit + integration + contract) end to end, confirm all green before marking feature complete
 
 ## Dependencies & Execution Order
 
