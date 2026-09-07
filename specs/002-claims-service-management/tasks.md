@@ -88,7 +88,7 @@ shared dependency).
 - [ ] T035 [P] Write services/claims/README.md: local run instructions, environment variables required (including POLICY_SERVICE_BASE_URL), how to run tests, troubleshooting section
 - [ ] T036 Add services/claims to root docker-compose.yml with its own Postgres database (claims_db) and POLICY_SERVICE_BASE_URL pointing at the policy-service container; add a healthcheck for claims-service
 - [ ] T037 Add a GitHub Actions workflow at .github/workflows/claims-service-ci.yml mirroring policy-service-ci.yml (path-filtered to services/claims/**, installs [dev] extras, runs full pytest suite including testcontainers integration tests)
-- [ ] T038 Run the full test suite (unit + integration + contract) end to end, confirm all green, and verify docker compose up brings up postgres/keycloak/policy-service/claims-service all healthy, with a live curl test: file a claim via claims-service referencing a policy created via policy-service, confirming the real cross-service call succeeds
+- [x] T038 Run the full test suite (unit + integration + contract) end to end, confirm all green, and verify docker compose up brings up postgres/keycloak/policy-service/claims-service all healthy, with a live curl test: file a claim via claims-service referencing a policy created via policy-service, confirming the real cross-service call succeeds
 
 ## Dependencies & Execution Order
 

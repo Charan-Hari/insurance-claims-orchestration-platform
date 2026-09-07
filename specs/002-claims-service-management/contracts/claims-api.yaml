@@ -1,0 +1,284 @@
+openapi: 3.1.0
+info:
+  title: Claims Service
+  version: 0.1.0
+paths:
+  /claims:
+    post:
+      summary: Create Claim Endpoint
+      operationId: create_claim_endpoint_claims_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimRead'
+        '400':
+          description: Policy validation failed
+        '403':
+          description: Access denied
+        '503':
+          description: Policy Service unavailable
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /claims/{claim_id}:
+    get:
+      summary: Get Claim Endpoint
+      operationId: get_claim_endpoint_claims__claim_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: claim_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Claim Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /policyholders/{policyholder_id}/claims:
+    get:
+      summary: List Claims Endpoint
+      operationId: list_claims_endpoint_policyholders__policyholder_id__claims_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: policyholder_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Policyholder Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClaimRead'
+                title: Response List Claims Endpoint Policyholders  Policyholder Id  Claims
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /claims/{claim_id}/status:
+    patch:
+      summary: Update Claim Status Endpoint
+      operationId: update_claim_status_endpoint_claims__claim_id__status_patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: claim_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Claim Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimStatusUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimRead'
+        '400':
+          description: Invalid status transition
+        '403':
+          description: Access denied
+        '404':
+          description: Claim not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    ClaimCreate:
+      properties:
+        policy_id:
+          type: string
+          format: uuid
+          title: Policy Id
+        policyholder_id:
+          type: string
+          format: uuid
+          title: Policyholder Id
+        claim_amount:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d{0,2}0*$
+          title: Claim Amount
+        incident_date:
+          type: string
+          format: date
+          title: Incident Date
+        description:
+          type: string
+          minLength: 1
+          title: Description
+        adjuster_notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Adjuster Notes
+      type: object
+      required:
+      - policy_id
+      - policyholder_id
+      - claim_amount
+      - incident_date
+      - description
+      title: ClaimCreate
+    ClaimRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        policy_id:
+          type: string
+          format: uuid
+          title: Policy Id
+        policyholder_id:
+          type: string
+          format: uuid
+          title: Policyholder Id
+        claim_amount:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Claim Amount
+        incident_date:
+          type: string
+          format: date
+          title: Incident Date
+        description:
+          type: string
+          title: Description
+        adjuster_notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Adjuster Notes
+        status:
+          $ref: '#/components/schemas/ClaimStatus'
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - id
+      - policy_id
+      - policyholder_id
+      - claim_amount
+      - incident_date
+      - description
+      - adjuster_notes
+      - status
+      - created_at
+      - updated_at
+      title: ClaimRead
+    ClaimStatus:
+      type: string
+      enum:
+      - submitted
+      - under_review
+      - approved
+      - denied
+      - paid
+      - closed
+      title: ClaimStatus
+    ClaimStatusUpdate:
+      properties:
+        status:
+          $ref: '#/components/schemas/ClaimStatus'
+      type: object
+      required:
+      - status
+      title: ClaimStatusUpdate
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      scheme: bearer
+
