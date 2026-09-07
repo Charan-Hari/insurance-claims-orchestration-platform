@@ -1,5 +1,9 @@
+import uuid
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from policy_service.auth.jwt import CurrentUser
 from policy_service.models.policy import PolicyStatus
 from policy_service.models.policy import Policy
 from policy_service.schemas.policy import PolicyCreate
@@ -25,3 +29,25 @@ async def create_policy(session: AsyncSession, policy_data: PolicyCreate) -> Pol
     await session.commit()
     await session.refresh(policy)
     return policy
+
+
+async def get_policy_by_id(session: AsyncSession, policy_id: uuid.UUID) -> Policy | None:
+    return await session.get(Policy, policy_id)
+
+
+async def list_policies_for_policyholder(session: AsyncSession, policyholder_id: uuid.UUID) -> list[Policy]:
+    result = await session.execute(select(Policy).where(Policy.policyholder_id == policyholder_id))
+    return list(result.scalars().all())
+
+
+def can_view_policy(policy: Policy, user: CurrentUser) -> bool:
+    if user.roles.intersection({"admin", "agent", "underwriter"}):
+        return True
+    # Keycloak's JWT subject is assumed to be the policyholder ID.
+    return "customer" in user.roles and str(policy.policyholder_id) == user.subject
+
+
+def can_view_policyholder(policyholder_id: uuid.UUID, user: CurrentUser) -> bool:
+    return bool(user.roles.intersection({"admin", "agent", "underwriter"})) or (
+        "customer" in user.roles and str(policyholder_id) == user.subject
+    )

@@ -55,12 +55,12 @@ shared dependency).
 
 **Independent Test**: Customer GETs own policy -> 200. Customer GETs another's policy -> 403. Admin GETs any policy -> 200.
 
-- [ ] T019 [P] [US2] Unit test: services/policy/tests/unit/test_policy_service_get.py - ownership check logic
-- [ ] T020 [P] [US2] Contract test: services/policy/tests/contract/test_get_policy_contract.py
-- [ ] T021 [US2] Integration test: services/policy/tests/integration/test_get_policy.py - own/other/admin access scenarios (per spec Acceptance Scenarios 2.1-2.3)
-- [ ] T022 [US2] Implement get_policy_by_id and list_policies_for_policyholder in services/policy/src/policy_service/services/policy_service.py with ownership/role enforcement
-- [ ] T023 [US2] Implement GET /policies/{id} and GET /policyholders/{id}/policies endpoints in services/policy/src/policy_service/api/routes.py
-- [ ] T024 [US2] Run tests T019-T021, confirm green
+- [x] T019 [P] [US2] Unit test: services/policy/tests/unit/test_policy_service_get.py - ownership check logic
+- [x] T020 [P] [US2] Contract test: services/policy/tests/contract/test_get_policy_contract.py
+- [x] T021 [US2] Integration test: services/policy/tests/integration/test_get_policy.py - own/other/admin access scenarios (per spec Acceptance Scenarios 2.1-2.3)
+- [x] T022 [US2] Implement get_policy_by_id and list_policies_for_policyholder in services/policy/src/policy_service/services/policy_service.py with ownership/role enforcement
+- [x] T023 [US2] Implement GET /policies/{id} and GET /policyholders/{id}/policies endpoints in services/policy/src/policy_service/api/routes.py
+- [x] T024 [US2] Run tests T019-T021, confirm green
 
 **Checkpoint**: User Stories 1 and 2 both working independently. Retrieval performance (SC-003, p95 < 500ms) spot-checked.
 
