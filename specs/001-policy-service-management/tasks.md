@@ -40,12 +40,12 @@ shared dependency).
 
 **Independent Test**: POST a valid policy payload as an agent -> 201 with status=draft. POST as a customer -> 403.
 
-- [ ] T013 [P] [US1] Unit test: services/policy/tests/unit/test_policy_service_create.py - validates draft status default, rejects missing required fields
-- [ ] T014 [P] [US1] Contract test: services/policy/tests/contract/test_create_policy_contract.py - validates request/response shape against contracts/policy-api.yaml
-- [ ] T015 [US1] Integration test: services/policy/tests/integration/test_create_policy.py - agent creates policy (201, draft), customer attempt denied (403), using testcontainers Postgres
-- [ ] T016 [US1] Implement create_policy business logic in services/policy/src/policy_service/services/policy_service.py
-- [ ] T017 [US1] Implement POST /policies endpoint in services/policy/src/policy_service/api/routes.py with role dependency (agent, underwriter only)
-- [ ] T018 [US1] Run tests T013-T015, confirm green
+- [x] T013 [P] [US1] Unit test: services/policy/tests/unit/test_policy_service_create.py - validates draft status default, rejects missing required fields
+- [x] T014 [P] [US1] Contract test: services/policy/tests/contract/test_create_policy_contract.py - validates request/response shape against contracts/policy-api.yaml
+- [x] T015 [US1] Integration test: services/policy/tests/integration/test_create_policy.py - agent creates policy (201, draft), customer attempt denied (403), using testcontainers Postgres
+- [x] T016 [US1] Implement create_policy business logic in services/policy/src/policy_service/services/policy_service.py
+- [x] T017 [US1] Implement POST /policies endpoint in services/policy/src/policy_service/api/routes.py with role dependency (agent, underwriter only)
+- [x] T018 [US1] Run tests T013-T015, confirm green
 
 **Checkpoint**: User Story 1 fully working and independently testable/demoable.
 
