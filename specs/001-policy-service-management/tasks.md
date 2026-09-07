@@ -14,23 +14,23 @@ shared dependency).
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [ ] T001 Create services/policy/ directory skeleton (src/policy_service/{api,models,schemas,services,auth,db}, tests/{unit,integration,contract}) per plan.md Project Structure
-- [ ] T002 Create services/policy/pyproject.toml with dependencies: fastapi, uvicorn, sqlalchemy[asyncio], asyncpg, alembic, python-jose[cryptography], pydantic, pytest, pytest-asyncio, httpx, testcontainers
-- [ ] T003 [P] Create services/policy/Dockerfile (python:3.12-slim base, install deps, run uvicorn)
-- [ ] T004 [P] Create services/policy/alembic.ini and services/policy/src/policy_service/db/migrations/ scaffold (alembic init)
-- [ ] T005 [P] Create services/policy/src/policy_service/db/session.py with async SQLAlchemy engine/session factory reading DATABASE_URL from environment
-- [ ] T006 [P] Create services/policy/src/policy_service/auth/jwt.py: JWT validation against Keycloak issuer/JWKS, decode role claim, raise 401/403 as appropriate
-- [ ] T007 Create services/policy/src/policy_service/main.py: FastAPI app instance, health/readiness endpoints, router registration
+- [x] T001 Create services/policy/ directory skeleton (src/policy_service/{api,models,schemas,services,auth,db}, tests/{unit,integration,contract}) per plan.md Project Structure
+- [x] T002 Create services/policy/pyproject.toml with dependencies: fastapi, uvicorn, sqlalchemy[asyncio], asyncpg, alembic, python-jose[cryptography], pydantic, pytest, pytest-asyncio, httpx, testcontainers
+- [x] T003 [P] Create services/policy/Dockerfile (python:3.12-slim base, install deps, run uvicorn)
+- [x] T004 [P] Create services/policy/alembic.ini and services/policy/src/policy_service/db/migrations/ scaffold (alembic init)
+- [x] T005 [P] Create services/policy/src/policy_service/db/session.py with async SQLAlchemy engine/session factory reading DATABASE_URL from environment
+- [x] T006 [P] Create services/policy/src/policy_service/auth/jwt.py: JWT validation against Keycloak issuer/JWKS, decode role claim, raise 401/403 as appropriate
+- [x] T007 Create services/policy/src/policy_service/main.py: FastAPI app instance, health/readiness endpoints, router registration
 
 **Checkpoint**: Service skeleton runs (`uvicorn` boots), health check returns 200. No business logic yet.
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-- [ ] T008 Create services/policy/src/policy_service/models/policy.py: Policy ORM model (id, policyholder_id, coverage_type, coverage_limits, effective_date, expiry_date, status, premium_amount, created_at, updated_at)
-- [ ] T009 Create services/policy/src/policy_service/models/audit.py: AuditRecord ORM model (id, policy_id FK, actor_id, old_status, new_status, created_at) - no update/delete methods exposed
-- [ ] T010 Generate initial Alembic migration for policy and audit_record tables in services/policy/src/policy_service/db/migrations/versions/
-- [ ] T011 Create services/policy/src/policy_service/schemas/policy.py: Pydantic schemas (PolicyCreate, PolicyRead, PolicyStatusUpdate, AuditRecordRead)
-- [ ] T012 Define the status transition state machine (valid transitions map per spec Clarifications) in services/policy/src/policy_service/services/policy_service.py
+- [x] T008 Create services/policy/src/policy_service/models/policy.py: Policy ORM model (id, policyholder_id, coverage_type, coverage_limits, effective_date, expiry_date, status, premium_amount, created_at, updated_at)
+- [x] T009 Create services/policy/src/policy_service/models/audit.py: AuditRecord ORM model (id, policy_id FK, actor_id, old_status, new_status, created_at) - no update/delete methods exposed
+- [x] T010 Generate initial Alembic migration for policy and audit_record tables in services/policy/src/policy_service/db/migrations/versions/
+- [x] T011 Create services/policy/src/policy_service/schemas/policy.py: Pydantic schemas (PolicyCreate, PolicyRead, PolicyStatusUpdate, AuditRecordRead)
+- [x] T012 Define the status transition state machine (valid transitions map per spec Clarifications) in services/policy/src/policy_service/services/policy_service.py
 
 **Checkpoint**: DB schema exists, migrations apply cleanly against a local Postgres container. No endpoints wired yet.
 
