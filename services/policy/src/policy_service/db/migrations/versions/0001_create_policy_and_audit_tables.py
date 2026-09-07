@@ -5,7 +5,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 
-revision = "0001_create_policy_and_audit_tables"
+revision = "0001_policy_audit"
 down_revision = None
 branch_labels = None
 depends_on = None
