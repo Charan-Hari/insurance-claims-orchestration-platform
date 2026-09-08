@@ -107,12 +107,12 @@ shared dependency).
 
 ## Amendment: Idempotent Claim Creation
 
-- [ ] T039 Write unit tests for request fingerprinting and replay behavior.
-- [ ] T040 Write contract tests for the `Idempotency-Key` header and `409 Conflict`.
-- [ ] T041 Write real-Postgres integration tests for duplicate and conflicting keys.
-- [ ] T042 Add the idempotency-key model and Alembic migration.
-- [ ] T043 Implement atomic idempotency registration with claim creation.
-- [ ] T044 Update `POST /claims` to require and process `Idempotency-Key`.
-- [ ] T045 Verify identical retries return the original claim without duplicates.
-- [ ] T046 Verify conflicting retries return `409 Conflict`.
+- [x] T039 Write unit tests for request fingerprinting and replay behavior.
+- [x] T040 Write contract tests for the `Idempotency-Key` header and `409 Conflict`.
+- [x] T041 Write real-Postgres integration tests for duplicate and conflicting keys.
+- [x] T042 Add the idempotency-key model and Alembic migration.
+- [x] T043 Implement atomic idempotency registration with claim creation.
+- [x] T044 Update `POST /claims` to require and process `Idempotency-Key`.
+- [x] T045 Verify identical retries return the original claim without duplicates.
+- [x] T046 Verify conflicting retries return `409 Conflict`.
 - [ ] T047 Update the OpenAPI contract, README, Docker verification, and CI tests.

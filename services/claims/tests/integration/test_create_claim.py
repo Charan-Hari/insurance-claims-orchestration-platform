@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
+from sqlalchemy import func, select
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from testcontainers.community.postgres import PostgresContainer
@@ -72,7 +73,7 @@ async def test_file_claim_requires_roles_verifies_policy_and_maps_dependency_err
         created = await client.post(
             "/claims",
             json=payload(),
-            headers={"Authorization": "Bearer agent-token"},
+            headers={"Authorization": "Bearer agent-token", "Idempotency-Key": "integration-key"},
         )
     assert created.status_code == 201
     assert created.json()["status"] == "submitted"
@@ -99,5 +100,123 @@ async def test_file_claim_requires_roles_verifies_policy_and_maps_dependency_err
             "claims_service.services.claim_service.policy_client.get_policy",
             AsyncMock(side_effect=error),
         ):
-            response = await client.post("/claims", json=payload(), headers={"Authorization": "Bearer agent-token"})
+            response = await client.post(
+                "/claims",
+                json=payload(),
+                headers={
+                    "Authorization": "Bearer agent-token",
+                    "Idempotency-Key": f"integration-key-{expected_status}",
+                },
+            )
         assert response.status_code == expected_status
+
+
+@pytest.mark.asyncio
+async def test_idempotent_claim_replay_returns_original_claim(
+    integration_client: tuple[httpx.AsyncClient, async_sessionmaker[AsyncSession]],
+) -> None:
+    client, session_factory = integration_client
+    app.dependency_overrides[get_current_user] = lambda: user("agent")
+    body = payload()
+
+    with patch(
+        "claims_service.services.claim_service.policy_client.get_policy",
+        AsyncMock(return_value={"status": "active"}),
+    ):
+        first = await client.post(
+            "/claims",
+            json=body,
+            headers={"Authorization": "Bearer agent-token", "Idempotency-Key": "replay-key"},
+        )
+        second = await client.post(
+            "/claims",
+            json=body,
+            headers={"Authorization": "Bearer agent-token", "Idempotency-Key": "replay-key"},
+        )
+
+    assert first.status_code == 201
+    assert second.status_code == 201
+    assert second.json()["id"] == first.json()["id"]
+
+    async with session_factory() as session:
+        count = await session.scalar(select(func.count(Claim.id)))
+        assert count == 1
+
+
+@pytest.mark.asyncio
+async def test_idempotency_key_conflict_returns_409(
+    integration_client: tuple[httpx.AsyncClient, async_sessionmaker[AsyncSession]],
+) -> None:
+    client, _ = integration_client
+    app.dependency_overrides[get_current_user] = lambda: user("agent")
+    first_body = payload()
+    second_body = {**first_body, "description": "Different request"}
+
+    with patch(
+        "claims_service.services.claim_service.policy_client.get_policy",
+        AsyncMock(return_value={"status": "active"}),
+    ):
+        first = await client.post(
+            "/claims",
+            json=first_body,
+            headers={"Authorization": "Bearer agent-token", "Idempotency-Key": "conflict-key"},
+        )
+        conflict = await client.post(
+            "/claims",
+            json=second_body,
+            headers={"Authorization": "Bearer agent-token", "Idempotency-Key": "conflict-key"},
+        )
+
+    assert first.status_code == 201
+    assert conflict.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_idempotency_key_is_scoped_to_subject(
+    integration_client: tuple[httpx.AsyncClient, async_sessionmaker[AsyncSession]],
+) -> None:
+    client, _ = integration_client
+    body = payload()
+
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(subject="agent-one", roles=frozenset({"agent"}), claims={})
+    with patch(
+        "claims_service.services.claim_service.policy_client.get_policy",
+        AsyncMock(return_value={"status": "active"}),
+    ):
+        first = await client.post(
+            "/claims",
+            json=body,
+            headers={"Authorization": "Bearer agent-one-token", "Idempotency-Key": "scoped-key"},
+        )
+
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(subject="agent-two", roles=frozenset({"agent"}), claims={})
+    with patch(
+        "claims_service.services.claim_service.policy_client.get_policy",
+        AsyncMock(return_value={"status": "active"}),
+    ):
+        second = await client.post(
+            "/claims",
+            json=body,
+            headers={"Authorization": "Bearer agent-two-token", "Idempotency-Key": "scoped-key"},
+        )
+
+    assert first.status_code == 201
+    assert second.status_code == 201
+    assert first.json()["id"] != second.json()["id"]
+
+
+@pytest.mark.asyncio
+async def test_missing_idempotency_key_returns_400(
+    integration_client: tuple[httpx.AsyncClient, async_sessionmaker[AsyncSession]],
+) -> None:
+    client, _ = integration_client
+    app.dependency_overrides[get_current_user] = lambda: user("agent")
+
+    response = await client.post(
+        "/claims",
+        json=payload(),
+        headers={"Authorization": "Bearer agent-token"},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Idempotency-Key header is required"

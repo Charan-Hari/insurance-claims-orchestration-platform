@@ -7,12 +7,23 @@ paths:
     post:
       summary: Create Claim Endpoint
       operationId: create_claim_endpoint_claims_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idempotency-Key
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/ClaimCreate'
-        required: true
       responses:
         '201':
           description: Successful Response
@@ -21,9 +32,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/ClaimRead'
         '400':
-          description: Policy validation failed
+          description: Policy validation or idempotency-key validation failed
         '403':
           description: Access denied
+        '409':
+          description: Idempotency-Key conflict
         '503':
           description: Policy Service unavailable
         '422':
@@ -32,8 +45,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /claims/{claim_id}:
     get:
       summary: Get Claim Endpoint
