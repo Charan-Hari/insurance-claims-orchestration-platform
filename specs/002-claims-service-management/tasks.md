@@ -83,11 +83,11 @@ shared dependency).
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T033 [P] Export OpenAPI schema from the running service to contracts/claims-api.yaml, commit as the pinned contract artifact
-- [ ] T034 [P] Add structured JSON logging to all endpoints (reuse Policy Service's logging_config.py pattern), including an explicit log line for policy_client calls (target service, outcome, latency) without logging the Authorization header
-- [ ] T035 [P] Write services/claims/README.md: local run instructions, environment variables required (including POLICY_SERVICE_BASE_URL), how to run tests, troubleshooting section
-- [ ] T036 Add services/claims to root docker-compose.yml with its own Postgres database (claims_db) and POLICY_SERVICE_BASE_URL pointing at the policy-service container; add a healthcheck for claims-service
-- [ ] T037 Add a GitHub Actions workflow at .github/workflows/claims-service-ci.yml mirroring policy-service-ci.yml (path-filtered to services/claims/**, installs [dev] extras, runs full pytest suite including testcontainers integration tests)
+- [x] T033 [P] Export OpenAPI schema from the running service to contracts/claims-api.yaml, commit as the pinned contract artifact
+- [x] T034 [P] Add structured JSON logging to all endpoints (reuse Policy Service's logging_config.py pattern), including an explicit log line for policy_client calls (target service, outcome, latency) without logging the Authorization header
+- [x] T035 [P] Write services/claims/README.md: local run instructions, environment variables required (including POLICY_SERVICE_BASE_URL), how to run tests, troubleshooting section
+- [x] T036 Add services/claims to root docker-compose.yml with its own Postgres database (claims_db) and POLICY_SERVICE_BASE_URL pointing at the policy-service container; add a healthcheck for claims-service
+- [x] T037 Add a GitHub Actions workflow at .github/workflows/claims-service-ci.yml mirroring policy-service-ci.yml (path-filtered to services/claims/**, installs [dev] extras, runs full pytest suite including testcontainers integration tests)
 - [x] T038 Run the full test suite (unit + integration + contract) end to end, confirm all green, and verify docker compose up brings up postgres/keycloak/policy-service/claims-service all healthy, with a live curl test: file a claim via claims-service referencing a policy created via policy-service, confirming the real cross-service call succeeds
 
 ## Dependencies & Execution Order
