@@ -115,4 +115,4 @@ shared dependency).
 - [x] T044 Update `POST /claims` to require and process `Idempotency-Key`.
 - [x] T045 Verify identical retries return the original claim without duplicates.
 - [x] T046 Verify conflicting retries return `409 Conflict`.
-- [ ] T047 Update the OpenAPI contract, README, Docker verification, and CI tests.
+- [x] T047 Update the OpenAPI contract, README, Docker verification, and CI tests.

@@ -172,3 +172,24 @@ status, and customers can only access their own claims.
 Service intentionally returns `404` (not `403`) when a customer requests a
 claim or policyholder claim list they do not own, to avoid leaking the
 existence of another policyholder's claims.
+
+## Idempotent Claim Creation
+
+`POST /claims` requires an `Idempotency-Key` request header.
+
+For the same authenticated subject:
+
+- Reusing the same key with the same request returns the original claim.
+- Reusing the same key with a different request returns `409 Conflict`.
+- Missing or blank keys return `400`.
+- Idempotency keys are persisted atomically with claim creation.
+- Authorization tokens are never stored or logged.
+
+Example headers:
+
+- `Authorization: Bearer $TOKEN`
+- `Idempotency-Key: claim-request-001`
+- `Content-Type: application/json`
+
+The idempotency key is scoped to the authenticated subject, so different users
+may safely use the same key value.
