@@ -136,3 +136,17 @@ As an adjuster, I want to update a claim's status as it moves through review, so
 - Invalid status transitions are rejected with a validation error; no partial state change occurs (see Clarifications above).
 - Status update and audit record creation are atomic via a single database transaction (see Clarifications above).
 - Non-existent policy ID: claim creation rejected with a validation error (see Clarifications above).
+
+## Amendment: Idempotent Claim Creation
+
+To support reliable orchestration and safe retry after ambiguous responses,
+`POST /claims` must accept an `Idempotency-Key` request header.
+
+- The key is required for orchestrated claim creation.
+- The key must be scoped to the authenticated caller.
+- The key and claim creation must be persisted atomically.
+- Repeating the same key with the same request returns the original claim.
+- Repeating the same key with a different request returns `409 Conflict`.
+- A failed transaction must not reserve the key.
+- The idempotency record must store a request fingerprint and resulting claim ID.
+- Authorization tokens must never be stored or logged.

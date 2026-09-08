@@ -91,3 +91,21 @@ caching) if the platform grows.
 ## Complexity Tracking
 
 No constitution violations - table not needed.
+
+## Idempotency Extension
+
+Add a claims-service-owned `claim_idempotency_keys` table containing:
+
+- authenticated subject
+- idempotency key
+- request fingerprint
+- claim ID
+- created timestamp
+
+Create a unique constraint on `(subject, idempotency_key)`. Claim creation,
+idempotency registration, and the audit/state write must occur in one database
+transaction.
+
+The endpoint must accept the `Idempotency-Key` request header. Identical
+replays return the original claim. Reusing a key with a different request
+returns `409 Conflict`. Authorization tokens must never be stored or logged.

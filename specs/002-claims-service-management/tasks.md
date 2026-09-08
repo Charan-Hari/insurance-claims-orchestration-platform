@@ -104,3 +104,15 @@ shared dependency).
 **Incremental delivery**: Add Phase 4 (retrieval) next since it is also P1 priority, then Phase 5 (status transitions, P2) last.
 
 **Key difference from Policy Service delivery**: this feature's most interesting/differentiating work is the policy_client.py resilience logic (T013, T015) and the final end-to-end cross-service proof (T038) - prioritize getting those right over polish tasks if time is constrained.
+
+## Amendment: Idempotent Claim Creation
+
+- [ ] T039 Write unit tests for request fingerprinting and replay behavior.
+- [ ] T040 Write contract tests for the `Idempotency-Key` header and `409 Conflict`.
+- [ ] T041 Write real-Postgres integration tests for duplicate and conflicting keys.
+- [ ] T042 Add the idempotency-key model and Alembic migration.
+- [ ] T043 Implement atomic idempotency registration with claim creation.
+- [ ] T044 Update `POST /claims` to require and process `Idempotency-Key`.
+- [ ] T045 Verify identical retries return the original claim without duplicates.
+- [ ] T046 Verify conflicting retries return `409 Conflict`.
+- [ ] T047 Update the OpenAPI contract, README, Docker verification, and CI tests.
