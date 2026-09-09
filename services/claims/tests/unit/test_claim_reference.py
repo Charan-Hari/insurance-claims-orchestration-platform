@@ -68,3 +68,30 @@ def test_reference_is_exposed_in_the_read_schema() -> None:
 def test_reference_column_fits_the_generated_format() -> None:
     longest = format_claim_reference(2026, 10 ** CLAIM_REFERENCE_DIGITS - 1)
     assert len(longest) <= Claim.__table__.columns["claim_reference"].type.length
+
+
+def test_create_all_emits_sequence_before_the_table_that_uses_it():
+    """The column default calls nextval(), so the sequence must exist first.
+
+    Integration tests and scratch databases build the schema from the models
+    rather than from Alembic. If the sequence is not attached to the metadata,
+    create_all produces a table whose default references a missing sequence and
+    every insert fails at runtime instead of at schema creation.
+    """
+    from sqlalchemy import create_mock_engine
+
+    from claims_service.db.base import Base
+
+    statements: list[str] = []
+    engine = create_mock_engine(
+        "postgresql://",
+        lambda sql, *a, **k: statements.append(str(sql.compile(dialect=engine.dialect))),
+    )
+    Base.metadata.create_all(engine, checkfirst=False)
+
+    sequence_at = next(
+        i for i, s in enumerate(statements) if f"CREATE SEQUENCE {CLAIM_REFERENCE_SEQUENCE}" in s
+    )
+    table_at = next(i for i, s in enumerate(statements) if "CREATE TABLE claim " in s)
+
+    assert sequence_at < table_at

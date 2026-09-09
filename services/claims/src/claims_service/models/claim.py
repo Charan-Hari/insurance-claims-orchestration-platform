@@ -3,7 +3,7 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Date, DateTime, Enum, Numeric, String, Text, func, text
+from sqlalchemy import Date, DateTime, Enum, Numeric, Sequence, String, Text, func, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -20,6 +20,13 @@ from claims_service.db.base import Base
 CLAIM_REFERENCE_SEQUENCE = "claim_reference_seq"
 CLAIM_REFERENCE_PREFIX = "CLM"
 CLAIM_REFERENCE_DIGITS = 6
+
+#: Bound to the shared metadata so ``create_all`` emits ``CREATE SEQUENCE``
+#: before the table that depends on it. Without this the column default would
+#: reference a sequence that only the Alembic migration creates, so any schema
+#: built from the models alone -- integration tests, local scratch databases --
+#: would fail on first insert.
+claim_reference_seq = Sequence(CLAIM_REFERENCE_SEQUENCE, metadata=Base.metadata)
 
 CLAIM_REFERENCE_DEFAULT = text(
     f"'{CLAIM_REFERENCE_PREFIX}-' || to_char(now(), 'YYYY') || '-' || "
