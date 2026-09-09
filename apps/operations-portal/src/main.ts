@@ -279,7 +279,7 @@ document.addEventListener("click", (event) => {
     case "use-sample":
       state.wizard.draft = { ...sampleWorkflowDraft };
       state.wizard.showErrors = false;
-      notify("info", "Sample claim details loaded. Review each step before submitting.");
+      notify("info", "Example claim details loaded. Review each step before submitting.");
       return render();
     case "use-sample-holder":
       return void loadRecords(DEMO_POLICYHOLDER_ID);

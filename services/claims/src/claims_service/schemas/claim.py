@@ -27,6 +27,7 @@ class ClaimRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
+    claim_reference: str
     policy_id: uuid.UUID
     policyholder_id: uuid.UUID
     claim_amount: Decimal

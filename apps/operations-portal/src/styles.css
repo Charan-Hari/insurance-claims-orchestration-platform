@@ -102,14 +102,6 @@ p { margin: 0; }
   font-size: 10.5px; font-weight: 600; letter-spacing: 0.11em;
   text-transform: uppercase; color: #8ba6d0; margin-top: 3px;
 }
-.brand__env {
-  align-self: center; margin-left: 4px; padding: 3px 9px;
-  border-radius: 999px; font-size: 10px; font-weight: 700;
-  letter-spacing: 0.09em; text-transform: uppercase;
-  color: #bfdbfe; background: rgba(96, 165, 250, 0.15);
-  border: 1px solid rgba(147, 197, 253, 0.3);
-}
-
 .topbar__right { display: flex; align-items: center; gap: 10px; }
 
 .icon-button {
@@ -468,14 +460,6 @@ textarea.input { resize: vertical; min-height: 84px; line-height: 1.55; }
 .inline-form { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
 .inline-form .field { flex: 1; min-width: min(260px, 100%); margin: 0; }
 
-.demo-note {
-  display: flex; flex-wrap: wrap; gap: 4px;
-  margin-bottom: 20px; padding: 11px 15px;
-  border: 1px solid #bfdbfe; border-left: 3px solid var(--brand-600);
-  border-radius: var(--radius-sm); background: var(--brand-50);
-  font-size: 12.5px; line-height: 1.55; color: #1e3a5f;
-}
-
 .record {
   display: flex; align-items: center; justify-content: space-between;
   gap: 16px; padding: 14px 0; border-top: 1px solid var(--border);
@@ -525,7 +509,6 @@ textarea.input { resize: vertical; min-height: 84px; line-height: 1.55; }
   .health__summary { display: none; }
   .brand__sub { display: none; }
   .brand__title { white-space: nowrap; }
-  .brand__env { display: none; }
   .topbar { padding: 0 16px; }
   .main { padding: 24px 18px 56px; }
   .nav {

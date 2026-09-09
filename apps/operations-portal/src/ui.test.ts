@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { escapeHtml, formatCurrency, humanize, relativeTime, shortId, toneFor } from "./format";
 import { probeService, summarize, type ServiceHealth } from "./health";
-import { filterWorkflows } from "./views";
+import { filterWorkflows, recordsView } from "./views";
 import type { Workflow } from "./api";
 
 describe("formatting helpers", () => {
@@ -78,3 +78,41 @@ describe("history filtering", () => {
     expect(filterWorkflows(entries, "nothing")).toHaveLength(0);
   });
 });
+
+describe("recordsView claim identifiers", () => {
+  const base = {
+    holder: "11111111-1111-4111-8111-111111111111",
+    loading: false,
+    policies: [],
+    usingSamples: false,
+  };
+  const claim = {
+    id: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+    policy_id: "11111111-1111-4111-8111-111111111111",
+    claim_reference: "CLM-2026-004100",
+    description: "Water damage",
+    incident_date: "2026-01-04",
+    claim_amount: 4200,
+    status: "approved",
+    created_at: "2026-01-05T10:00:00Z",
+    updated_at: "2026-01-05T10:00:00Z",
+  };
+
+  it("renders the human-facing reference rather than the raw UUID", () => {
+    const html = recordsView({ ...base, claims: [claim] } as never);
+    expect(html).toContain("CLM-2026-004100");
+    expect(html).not.toContain(">aaaaaaaa<");
+  });
+
+  it("keeps the UUID available as a tooltip for support lookups", () => {
+    const html = recordsView({ ...base, claims: [claim] } as never);
+    expect(html).toContain(`title="${claim.id}"`);
+  });
+
+  it("falls back to a shortened UUID when no reference exists", () => {
+    const { claim_reference: _omitted, ...legacy } = claim;
+    const html = recordsView({ ...base, claims: [legacy] } as never);
+    expect(html).toContain("aaaaaaaa");
+  });
+});
+

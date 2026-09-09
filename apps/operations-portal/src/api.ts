@@ -1,7 +1,7 @@
 export type ServiceName = "policy" | "claims" | "orchestrator" | "legacy" | "payments";
 export interface ApiConfig { baseUrls?: Partial<Record<ServiceName, string>>; token?: string; timeoutMs?: number; }
 export interface Policy { id: string; policyholder_id: string; coverage_type: string; coverage_limits: Record<string, unknown>; effective_date: string; expiry_date: string; status: string; premium_amount?: string | number | null; created_at: string; updated_at: string; }
-export interface Claim { id: string; policy_id: string; policyholder_id: string; claim_amount: string | number; incident_date: string; description: string; adjuster_notes?: string | null; status: string; created_at: string; updated_at: string; }
+export interface Claim { id: string; claim_reference?: string; policy_id: string; policyholder_id: string; claim_amount: string | number; incident_date: string; description: string; adjuster_notes?: string | null; status: string; created_at: string; updated_at: string; }
 export interface WorkflowStep { name: string; state: string; error_category?: string | null; started_at?: string | null; completed_at?: string | null; }
 export interface Workflow { id: string; policy_id: string; policyholder_id: string; state: string; claim_id?: string | null; failure_category?: string | null; retry_count: number; created_at: string; updated_at: string; steps: WorkflowStep[]; }
 export interface LegacyClaim { id: string; source_system: string; legacy_claim_id: string; policy_number?: string | null; policyholder_id?: string | null; claim_amount: string | number; incident_date: string; description: string; status: string; raw_payload: Record<string, unknown>; received_at: string; updated_at: string; }

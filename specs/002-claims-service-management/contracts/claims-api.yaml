@@ -188,6 +188,10 @@ components:
           type: string
           format: uuid
           title: Id
+        claim_reference:
+          type: string
+          title: Claim Reference
+          description: Human-facing claim number, for example CLM-2026-000042.
         policy_id:
           type: string
           format: uuid
@@ -225,6 +229,7 @@ components:
       type: object
       required:
       - id
+      - claim_reference
       - policy_id
       - policyholder_id
       - claim_amount

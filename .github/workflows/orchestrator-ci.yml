@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install dependencies
-        run: pip install -e "services/orchestrator[test]"
+        run: pip install -e "services/orchestrator[dev]"
       - name: Run tests
         run: PYTHONPATH=services/orchestrator/src pytest -q services/orchestrator/tests
       - name: Compile sources

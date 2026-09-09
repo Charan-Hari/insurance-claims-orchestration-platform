@@ -3,11 +3,40 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Date, DateTime, Enum, Numeric, String, Text, func
+from sqlalchemy import Date, DateTime, Enum, Numeric, String, Text, func, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from claims_service.db.base import Base
+
+#: Human-facing claim reference, e.g. ``CLM-2026-000042``.
+#:
+#: Adjusters and policyholders quote this over the phone; the UUID primary key is
+#: an internal identifier that services use to coordinate without a shared
+#: sequence. Both exist deliberately: the UUID keeps writes uncoordinated across
+#: services, while the reference gives operators something short and speakable.
+#: The value is assigned by PostgreSQL from a sequence so concurrent inserts
+#: cannot collide, and a unique index enforces that guarantee.
+CLAIM_REFERENCE_SEQUENCE = "claim_reference_seq"
+CLAIM_REFERENCE_PREFIX = "CLM"
+CLAIM_REFERENCE_DIGITS = 6
+
+CLAIM_REFERENCE_DEFAULT = text(
+    f"'{CLAIM_REFERENCE_PREFIX}-' || to_char(now(), 'YYYY') || '-' || "
+    f"lpad(nextval('{CLAIM_REFERENCE_SEQUENCE}')::text, {CLAIM_REFERENCE_DIGITS}, '0')"
+)
+
+
+def format_claim_reference(year: int, sequence_value: int) -> str:
+    """Formats a claim reference the same way the database default does.
+
+    Kept in Python so the format has a single tested definition that callers and
+    fixtures can rely on without a database round trip.
+    """
+    return (
+        f"{CLAIM_REFERENCE_PREFIX}-{year:04d}-"
+        f"{sequence_value:0{CLAIM_REFERENCE_DIGITS}d}"
+    )
 
 
 class ClaimStatus(str, enum.Enum):
@@ -23,6 +52,13 @@ class Claim(Base):
     __tablename__ = "claim"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    claim_reference: Mapped[str] = mapped_column(
+        String(length=32),
+        nullable=False,
+        unique=True,
+        index=True,
+        server_default=CLAIM_REFERENCE_DEFAULT,
+    )
     policy_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
     policyholder_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
     claim_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)

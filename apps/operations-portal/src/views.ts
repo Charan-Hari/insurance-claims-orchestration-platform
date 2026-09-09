@@ -38,7 +38,7 @@ export function badge(value: string): string {
 }
 
 function sampleTag(isSample: boolean | undefined): string {
-  return isSample ? `<span class="tag tag--sample" title="Bundled demonstration record">Sample</span>` : "";
+  return isSample ? `<span class="tag tag--sample" title="Reference record, not a live API result">Example</span>` : "";
 }
 
 /** Application chrome: header with live health, sidebar navigation, and banner slot. */
@@ -85,7 +85,6 @@ export function shell(state: ShellState, content: string): string {
           <span class="brand__title">Claims<span class="brand__accent">Ops</span></span>
           <span class="brand__sub">Insurance Orchestration Platform</span>
         </span>
-        <span class="brand__env">${import.meta.env.VITE_DEMO_MODE === "true" ? "Demo" : "Local"}</span>
       </div>
       <div class="topbar__right">
         <div class="health">
@@ -102,13 +101,6 @@ export function shell(state: ShellState, content: string): string {
     <div class="layout">
       <nav class="nav ${state.navOpen ? "is-open" : ""}" aria-label="Main navigation">${nav}</nav>
       <main id="main-content" class="main" tabindex="-1">
-        ${
-          import.meta.env.VITE_DEMO_MODE === "true"
-            ? `<p class="demo-note">Public demo — service calls are simulated in the browser using the orchestrator's saga
-               semantics. <a class="link" href="https://github.com/Charan-Hari/insurance-claims-orchestration-platform#running-the-platform-locally">Run the real stack locally</a>
-               to exercise the live services.</p>`
-            : ""
-        }
         ${state.banner ? banner(state.banner) : ""}
         ${content}
       </main>
@@ -153,7 +145,7 @@ export function dashboardView(
   health: ServiceHealth[],
 ): string {
   const cards = [
-    { label: "Workflows tracked", value: metrics.total, hint: "Live runs plus bundled samples", tone: "" },
+    { label: "Workflows tracked", value: metrics.total, hint: "All recorded runs", tone: "" },
     { label: "Completed", value: metrics.completed, hint: "Both saga steps succeeded", tone: "positive" },
     { label: "Needs reconciliation", value: metrics.reconciliation, hint: "Operator review required", tone: metrics.reconciliation ? "negative" : "" },
     { label: "Retry attempts", value: metrics.retries, hint: "Bounded automatic retries", tone: "" },
@@ -287,7 +279,7 @@ export function wizardView(state: WizardViewState, furthest: number): string {
       "Guided submission",
       "New claim workflow",
       "Five steps take a claim from policy verification through orchestrated submission.",
-      `<button type="button" class="button button--ghost" id="use-sample">Use sample claim</button>`,
+      `<button type="button" class="button button--ghost" id="use-sample">Prefill example</button>`,
     )}
     ${stepper(state.step, Math.max(furthest, state.step))}
     <section class="card wizard">
@@ -435,7 +427,7 @@ export function historyView(entries: Array<Workflow | SampleWorkflow>, selected:
     ${pageHead(
       "Audit",
       "Workflow history",
-      "Every workflow submitted from this console, plus bundled sample runs for reference.",
+      "Every workflow submitted from this console.",
       `<button type="button" class="button button--primary" data-nav="workflow">Start new workflow</button>`,
     )}
     <section class="card">
@@ -506,10 +498,10 @@ export function recordsView(state: RecordsState): string {
           <input class="input" id="holder" name="holder" value="${escapeHtml(state.holder)}" placeholder="${DEMO_POLICYHOLDER_ID}" required>
         </div>
         <button type="submit" class="button button--primary" ${state.loading ? "disabled" : ""}>${state.loading ? `<span class="spinner" aria-hidden="true"></span> Loading…` : "Load records"}</button>
-        <button type="button" class="button button--ghost" id="use-sample-holder">Use sample ID</button>
+        <button type="button" class="button button--ghost" id="use-sample-holder">Prefill ID</button>
       </form>
     </section>
-    ${state.usingSamples ? `<p class="note">Showing bundled sample records so the console is never empty. Load a policyholder ID to query live services.</p>` : ""}
+    ${state.usingSamples ? `<p class="note">Showing reference records. Load a policyholder ID to query live services.</p>` : ""}
     ${state.loading ? skeletonGrid() : recordsGrid(state)}`;
 }
 
@@ -546,7 +538,7 @@ function recordsGrid(state: RecordsState): string {
                     <li class="record">
                       <div class="record__main">
                         <span class="record__title">${escapeHtml(claim.description)} ${sampleTag((claim as SampleClaim).sample)}</span>
-                        <code class="record__id">${escapeHtml(shortId(claim.id))}</code>
+                        <code class="record__id" title="${escapeHtml(claim.id)}">${escapeHtml(claim.claim_reference ?? shortId(claim.id))}</code>
                         <span class="record__meta">Incident ${escapeHtml(formatDate(claim.incident_date))}</span>
                       </div>
                       <div class="record__side">${badge(claim.status)}<span class="record__amount">${escapeHtml(formatCurrency(claim.claim_amount))}</span></div>

@@ -117,6 +117,7 @@ export const samplePolicies: SamplePolicy[] = [
 export const sampleClaims: SampleClaim[] = [
   {
     id: "caad1319-94c8-4a8a-b689-70e49171f9d4",
+    claim_reference: "CLM-2026-004105",
     policy_id: samplePolicies[0].id,
     policyholder_id: DEMO_POLICYHOLDER_ID,
     claim_amount: "1250.00",
@@ -130,6 +131,7 @@ export const sampleClaims: SampleClaim[] = [
   },
   {
     id: "4b0c19aa-7e58-4d43-9cb7-6f8b0e2a4d31",
+    claim_reference: "CLM-2026-004103",
     policy_id: samplePolicies[1].id,
     policyholder_id: DEMO_POLICYHOLDER_ID,
     claim_amount: "3480.75",
@@ -143,6 +145,7 @@ export const sampleClaims: SampleClaim[] = [
   },
   {
     id: "9d7f42c1-3a6e-4f90-8bd5-1e4c7a9b2f68",
+    claim_reference: "CLM-2026-004102",
     policy_id: samplePolicies[0].id,
     policyholder_id: DEMO_POLICYHOLDER_ID,
     claim_amount: "620.00",
@@ -156,6 +159,7 @@ export const sampleClaims: SampleClaim[] = [
   },
   {
     id: "6e3b84f0-2c17-4d59-a801-9f5c7b2e40d3",
+    claim_reference: "CLM-2026-004104",
     policy_id: samplePolicies[3].id,
     policyholder_id: DEMO_POLICYHOLDER_ID,
     claim_amount: "1890.40",
@@ -169,6 +173,7 @@ export const sampleClaims: SampleClaim[] = [
   },
   {
     id: "8c19d7e5-5b02-4a13-9e64-2d70f8a3c916",
+    claim_reference: "CLM-2026-004101",
     policy_id: samplePolicies[1].id,
     policyholder_id: DEMO_POLICYHOLDER_ID,
     claim_amount: "245.00",
@@ -182,6 +187,7 @@ export const sampleClaims: SampleClaim[] = [
   },
   {
     id: "3a5f60b9-8d43-4c27-b0f1-4e92a7c1d508",
+    claim_reference: "CLM-2026-004100",
     policy_id: samplePolicies[4].id,
     policyholder_id: DEMO_POLICYHOLDER_ID,
     claim_amount: "12400.00",
@@ -195,6 +201,7 @@ export const sampleClaims: SampleClaim[] = [
   },
   {
     id: "7f2e91c4-0a68-4b35-8d17-5c93b6e2f740",
+    claim_reference: "CLM-2026-004106",
     policy_id: samplePolicies[2].id,
     policyholder_id: DEMO_POLICYHOLDER_ID,
     claim_amount: "4750.25",
