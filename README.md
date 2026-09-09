@@ -2,6 +2,9 @@
 
 [![Policy Service CI](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/policy-service-ci.yml/badge.svg)](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/policy-service-ci.yml)
 [![Claims Service CI](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/claims-service-ci.yml/badge.svg)](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/claims-service-ci.yml)
+[![Orchestrator CI](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/orchestrator-ci.yml/badge.svg)](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/orchestrator-ci.yml)
+[![Payments Service CI](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/payments-service-ci.yml/badge.svg)](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/payments-service-ci.yml)
+[![Python Services CI](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/python-services-ci.yml/badge.svg)](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/python-services-ci.yml)
 [![Operations Portal Pages](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/operations-portal-pages.yml/badge.svg)](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/operations-portal-pages.yml)
 
 An insurance claims orchestration platform built with spec-driven development (GitHub Spec-Kit), where AI coding agents direct implementation under human review.
@@ -219,6 +222,25 @@ curl -X PATCH http://localhost:8000/policies/POLICY_ID/status \
 Feature work follows the Spec-Kit workflow: **constitution -> specify -> clarify -> plan -> tasks -> implement**, with tests and review gates around implementation. Read the [project constitution](.specify/memory/constitution.md) for the security, audit, resilience, integration, and human-review requirements.
 
 Every AI-generated change was reviewed before commit. The [commit history](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/commits/main/) contains the implementation sequence and detailed rationale in the commit messages.
+
+### Continuous integration
+
+Every service is covered by CI on push and pull request. Workflows are path-filtered, so a
+change to one service does not rebuild the others.
+
+| Workflow | Covers |
+| --- | --- |
+| Policy Service CI | `services/policy` |
+| Claims Service CI | `services/claims` |
+| Orchestrator CI | `services/orchestrator` |
+| Payments Service CI | `services/payments` (Node) |
+| Python Services CI | `services/copilot-rag`, `document-intelligence`, `eventing`, `legacy-adapter` (matrix) |
+| Operations Portal Pages | `apps/operations-portal` — tests gate the GitHub Pages deploy |
+
+Each Python job installs the service, byte-compiles `src` and `tests`, runs `pytest`, and
+fails on whitespace-damaged patches. **No job is given credentials or a hosted API key**:
+the suites must pass entirely offline, which keeps CI hermetic and continuously proves the
+offline defaults still work.
 
 ## AI assistance and human oversight
 
