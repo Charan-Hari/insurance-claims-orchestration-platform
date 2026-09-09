@@ -17,6 +17,10 @@ class ClaimsServiceUnavailable(Exception):
     pass
 
 
+class ClaimsServiceReconciliationRequired(ClaimsServiceUnavailable):
+    """The POST outcome is ambiguous after all safe idempotent retries."""
+
+
 class ClaimsServiceRejected(Exception):
     def __init__(self, status_code: int, detail: Any) -> None:
         self.status_code = status_code
@@ -68,28 +72,38 @@ async def create_claim(
                     timeout=REQUEST_TIMEOUT_SECONDS,
                 )
 
-                if response.status_code in {400, 403, 409}:
+                if 400 <= response.status_code < 500:
                     raise ClaimsServiceRejected(
                         response.status_code,
                         response.json(),
                     )
 
                 response.raise_for_status()
-                return response.json()
+                try:
+                    result = response.json()
+                except ValueError as exc:
+                    raise ClaimsServiceReconciliationRequired(
+                        "Claims Service returned an invalid claim result"
+                    ) from exc
+                if not isinstance(result, dict) or not result.get("id"):
+                    raise ClaimsServiceReconciliationRequired(
+                        "Claims Service returned an unrecognizable claim result"
+                    )
+                return result
 
             except ClaimsServiceRejected:
                 raise
             except (httpx.TimeoutException, httpx.ConnectError, httpx.NetworkError) as exc:
                 if attempt >= MAX_RETRIES:
-                    raise ClaimsServiceUnavailable(
-                        "Claims Service is unavailable"
+                    raise ClaimsServiceReconciliationRequired(
+                        "Claims Service claim outcome could not be reconciled"
                     ) from exc
                 await asyncio.sleep(INITIAL_BACKOFF_SECONDS * (2**attempt))
             except httpx.HTTPStatusError as exc:
                 if 500 <= exc.response.status_code < 600 and attempt < MAX_RETRIES:
                     await asyncio.sleep(INITIAL_BACKOFF_SECONDS * (2**attempt))
                     continue
-                raise ClaimsServiceUnavailable(
+                raise ClaimsServiceReconciliationRequired(
                     "Claims Service returned an unavailable response"
                 ) from exc
 

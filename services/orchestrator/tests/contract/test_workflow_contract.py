@@ -19,3 +19,5 @@ def test_workflow_endpoints_are_documented() -> None:
     assert "get" in schema["paths"]["/workflows/{workflow_id}"]
     assert "/workflows/{workflow_id}/retry" in schema["paths"]
     assert "post" in schema["paths"]["/workflows/{workflow_id}/retry"]
+    workflow_state = schema["components"]["schemas"]["WorkflowState"]["enum"]
+    assert "reconciliation_required" in workflow_state

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-for database in "$CLAIMS_POSTGRES_DB" "$ORCHESTRATOR_POSTGRES_DB"; do
+for database in "$CLAIMS_POSTGRES_DB" "$ORCHESTRATOR_POSTGRES_DB" "$LEGACY_POSTGRES_DB"; do
     psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "postgres" \
         --set=database="$database" <<-'EOSQL'
         SELECT 'CREATE DATABASE "' || :'database' || '"'

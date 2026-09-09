@@ -8,6 +8,11 @@ __pycache__/
 .venv/
 venv/
 *.env
+.env
+.env.*
+!.env.example
+dist/
+data/
 
 # Python
 __pycache__/

@@ -17,11 +17,11 @@
 - [x] T010 Add JWT authentication and role dependencies.
 - [x] T011 Add Policy Service HTTP client with timeout/retry/backoff.
 - [x] T012 Add Claims Service HTTP client with timeout/retry/backoff.
-- [ ] T013 Add typed downstream exceptions and safe structured logging.
+- [x] T013 Add typed downstream exceptions and safe structured logging.
 
 ## User Story 1: Start Claim Workflow
 
-- [ ] T014 Write workflow state-transition unit tests.
+- [x] T014 Write workflow state-transition unit tests.
 - [ ] T015 Write idempotency unit and concurrency tests.
 - [ ] T016 Write Policy/Claims HTTP boundary tests.
 - [x] T017 Write POST workflow contract tests.
@@ -30,7 +30,7 @@
 - [x] T020 Implement policy verification step.
 - [x] T021 Implement claim submission step.
 - [x] T022 Implement `POST /workflows/claims`.
-- [ ] T023 Implement failure classification and audit events.
+- [x] T023 Implement failure classification and audit events.
 
 ## User Story 2: Retrieve Workflow Status
 
@@ -45,7 +45,7 @@
 - [x] T029 Write retryability and bounded-retry tests.
 - [x] T030 Write retry contract tests.
 - [ ] T031 Write reconciliation-required integration tests.
-- [ ] T032 Implement retry and reconciliation service logic.
+- [x] T032 Implement retry and reconciliation service logic.
 - [x] T033 Implement `POST /workflows/{workflow_id}/retry`.
 
 ## Phase 4: Polish and Integration

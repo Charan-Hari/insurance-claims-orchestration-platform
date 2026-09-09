@@ -6,6 +6,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       CLAIMS_POSTGRES_DB: ${CLAIMS_POSTGRES_DB}
+      ORCHESTRATOR_POSTGRES_DB: ${ORCHESTRATOR_POSTGRES_DB}
+      LEGACY_POSTGRES_DB: ${LEGACY_POSTGRES_DB}
     volumes:
       - policy-postgres-data:/var/lib/postgresql/data
       - ./docker/postgres-init:/docker-entrypoint-initdb.d
@@ -113,5 +115,128 @@ services:
       retries: 5
       start_period: 10s
 
+  legacy-adapter:
+    build:
+      context: ./services/legacy-adapter
+      dockerfile: Dockerfile
+    command: ["sh", "-c", "alembic upgrade head && uvicorn legacy_adapter.main:app --host 0.0.0.0 --port 8000"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${LEGACY_POSTGRES_DB}
+      KEYCLOAK_ISSUER: http://keycloak:8080/realms/${KEYCLOAK_REALM}
+      KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE}
+      LEGACY_ADAPTER_ROLES: agent,admin,legacy-adapter
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    ports:
+      - "8003:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  payments-service:
+    build:
+      context: ./services/payments
+      dockerfile: Dockerfile
+    environment:
+      PORT: "8080"
+      PAYMENTS_DB_PATH: /data/payments.db
+    volumes:
+      - payments-data:/data
+    ports:
+      - "8004:8080"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8080/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  document-intelligence:
+    build:
+      context: ./services/document-intelligence
+      dockerfile: Dockerfile
+    environment:
+      DOCUMENT_STORAGE_PATH: /var/lib/document-intelligence
+      DOCUMENT_INTELLIGENCE_API_KEY: ${DOCUMENT_INTELLIGENCE_API_KEY}
+    volumes:
+      - document-intelligence-data:/var/lib/document-intelligence
+    ports:
+      - "8005:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/readiness')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  copilot-rag:
+    build:
+      context: ./services/copilot-rag
+      dockerfile: Dockerfile
+    environment:
+      COPILOT_RAG_DB_PATH: /var/lib/copilot-rag/copilot-rag.db
+      COPILOT_RAG_API_KEY: ${COPILOT_RAG_API_KEY:-local-development-key}
+    volumes:
+      - copilot-rag-data:/var/lib/copilot-rag
+    ports:
+      - "8006:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/readiness')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  eventing-service:
+    build:
+      context: ./services/eventing
+      dockerfile: Dockerfile
+    environment:
+      EVENTING_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8008:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/readiness')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  operations-portal:
+    build:
+      context: ./apps/operations-portal
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      policy-service:
+        condition: service_healthy
+      claims-service:
+        condition: service_healthy
+      orchestrator-service:
+        condition: service_healthy
+      legacy-adapter:
+        condition: service_healthy
+      payments-service:
+        condition: service_healthy
+      copilot-rag:
+        condition: service_healthy
+      document-intelligence:
+        condition: service_healthy
+      eventing-service:
+        condition: service_healthy
+
 volumes:
   policy-postgres-data:
+  payments-data:
+  document-intelligence-data:
+  copilot-rag-data:
