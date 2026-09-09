@@ -6,7 +6,7 @@
 - [x] T002 Add Dockerfile and `.dockerignore`.
 - [x] T003 Add test, unit, contract, and integration directories.
 - [x] T004 Add health and readiness endpoints.
-- [ ] T005 Add structured JSON logging and request IDs.
+- [x] T005 Add structured JSON logging and request IDs.
 
 ## Phase 2: Foundation
 
