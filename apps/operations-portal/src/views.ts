@@ -85,7 +85,7 @@ export function shell(state: ShellState, content: string): string {
           <span class="brand__title">Claims<span class="brand__accent">Ops</span></span>
           <span class="brand__sub">Insurance Orchestration Platform</span>
         </span>
-        <span class="brand__env">Local</span>
+        <span class="brand__env">${import.meta.env.VITE_DEMO_MODE === "true" ? "Demo" : "Local"}</span>
       </div>
       <div class="topbar__right">
         <div class="health">
@@ -102,6 +102,13 @@ export function shell(state: ShellState, content: string): string {
     <div class="layout">
       <nav class="nav ${state.navOpen ? "is-open" : ""}" aria-label="Main navigation">${nav}</nav>
       <main id="main-content" class="main" tabindex="-1">
+        ${
+          import.meta.env.VITE_DEMO_MODE === "true"
+            ? `<p class="demo-note">Public demo — service calls are simulated in the browser using the orchestrator's saga
+               semantics. <a class="link" href="https://github.com/Charan-Hari/insurance-claims-orchestration-platform#running-the-platform-locally">Run the real stack locally</a>
+               to exercise the live services.</p>`
+            : ""
+        }
         ${state.banner ? banner(state.banner) : ""}
         ${content}
       </main>

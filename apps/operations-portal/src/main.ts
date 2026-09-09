@@ -1,4 +1,5 @@
 import { ApiClient, ApiError, type Claim, type Policy, type Workflow } from "./api";
+import { DEMO_MODE, simulateRetry, simulateWorkflow } from "./demo-mode";
 import { probeAll, SERVICES, type ServiceHealth } from "./health";
 import { DEMO_POLICYHOLDER_ID, sampleClaims, samplePolicies, sampleWorkflowDraft } from "./sample-data";
 import { WorkflowHistory } from "./store";
@@ -168,7 +169,7 @@ async function advanceWizard(): Promise<void> {
   render();
 
   await run(
-    () => client.submitWorkflow(toWorkflowRequest(state.wizard.draft)),
+    () => (DEMO_MODE ? simulateWorkflow(toWorkflowRequest(state.wizard.draft)) : client.submitWorkflow(toWorkflowRequest(state.wizard.draft))),
     (workflow: Workflow) => {
       history.record(workflow);
       state.wizard.result = workflow;
@@ -200,7 +201,10 @@ async function loadRecords(holder: string): Promise<void> {
   render();
 
   await run(
-    async () => ({ policies: await client.listPolicies(holder), claims: await client.listClaims(holder) }),
+    async () =>
+      DEMO_MODE
+        ? { policies: samplePolicies, claims: sampleClaims }
+        : { policies: await client.listPolicies(holder), claims: await client.listClaims(holder) },
     (value: { policies: Policy[]; claims: Claim[] }) => {
       state.records = {
         holder,
@@ -247,8 +251,9 @@ document.addEventListener("click", (event) => {
 
   if (target.dataset.retry) {
     const id = target.dataset.retry;
+    const existing = history.find(id);
     void run(
-      () => client.retryWorkflow(id),
+      () => (DEMO_MODE && existing ? simulateRetry(existing) : client.retryWorkflow(id)),
       (workflow: Workflow) => {
         history.record(workflow);
         state.selectedWorkflowId = workflow.id;

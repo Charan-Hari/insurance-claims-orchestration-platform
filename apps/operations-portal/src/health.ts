@@ -52,6 +52,12 @@ export async function probeService(service: ServiceDescriptor, timeoutMs = PROBE
 
 /** Probes every configured service in parallel. */
 export function probeAll(services: ServiceDescriptor[] = SERVICES): Promise<ServiceHealth[]> {
+  // The published demo has no backend; report the documented healthy topology
+  // rather than eight failing probes against a machine that is not the viewer's.
+  if (import.meta.env.VITE_DEMO_MODE === "true") {
+    const checkedAt = new Date().toISOString();
+    return Promise.resolve(services.map((service) => ({ ...service, state: "online" as const, checkedAt })));
+  }
   return Promise.all(services.map((service) => probeService(service)));
 }
 

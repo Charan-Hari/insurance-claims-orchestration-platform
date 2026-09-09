@@ -2,12 +2,35 @@
 
 [![Policy Service CI](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/policy-service-ci.yml/badge.svg)](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/policy-service-ci.yml)
 [![Claims Service CI](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/claims-service-ci.yml/badge.svg)](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/claims-service-ci.yml)
+[![Operations Portal Pages](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/operations-portal-pages.yml/badge.svg)](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/operations-portal-pages.yml)
 
 An insurance claims orchestration platform built with spec-driven development (GitHub Spec-Kit), where AI coding agents direct implementation under human review.
+
+**[▶ Try the live demo](https://charan-hari.github.io/insurance-claims-orchestration-platform/)** — the Operations Console running on bundled sample data, no setup required.
 
 ![Operations Portal walkthrough](docs/demo/operations-portal-demo.gif)
 
 *The Operations Console taking a claim through the guided five-step workflow, then the resulting saga timeline, history, and reconciliation queue. See [docs/demo/](docs/demo/) for full-resolution screenshots.*
+
+## What this platform does
+
+An insurance claim cannot simply be written to a database. It has to be checked against a policy that lives in another system, recorded in a claims ledger, paid through a provider, and evidenced for audit — and any of those steps can fail independently. This platform models that reality.
+
+An operator submits a claim through the Operations Console. The Orchestrator then verifies the policy is active, creates the claim, and reports the outcome of each step. If a downstream service is unavailable partway through, the workflow is parked in a `reconciliation_required` state with its failure category recorded, rather than leaving the system in an ambiguous half-committed condition. An operator can then retry it from the console.
+
+Around that core flow sit the integrations a real enterprise deployment needs: a legacy adapter for claims arriving from older systems, a provider-neutral payments service, document intelligence for evidence handling, and a retrieval service that drafts cited answers while explicitly refusing to adjudicate.
+
+**Engineering properties demonstrated here**
+
+| Concern | How it is addressed |
+| --- | --- |
+| Distributed consistency | Saga coordination with per-step persistence and an explicit reconciliation state |
+| Idempotency | `Idempotency-Key` on every state-changing endpoint; replay returns the original result, changed payloads return `409` |
+| Resilience | Timeouts, bounded retries with backoff, and typed error classification on cross-service calls |
+| Security | Keycloak SSO, RBAC by role, JWT audience validation, no credentials in source |
+| Auditability | Append-only audit trails written in the same transaction as the state change |
+| Observability | Structured JSON logs with a request ID propagated across service boundaries |
+| Verification | 100+ automated tests, per-service CI, and live end-to-end evidence captured against the running stack |
 
 ## Why this exists
 
@@ -23,7 +46,7 @@ This project demonstrates enterprise-grade delivery practices for AI-assisted en
 | Legacy Adapter | **COMPLETE** | Idempotent legacy claim ingestion, PostgreSQL persistence, Keycloak auth, health/readiness, Docker Compose |
 | Payments Integration | **COMPLETE** | Provider-neutral authorize/capture/refund API, idempotency persistence, deterministic local provider, structured logs, Docker runtime |
 | Document Intelligence | **COMPLETE** | Secure local document storage, checksum/idempotency, policy-aware search, explainable review, human approval workflow |
-| Operations Portal | **COMPLETE** | Guided five-step workflow wizard, live service-health monitoring, persistent workflow history, records lookup, reconciliation queue, 28/28 tests passing |
+| Operations Portal | **COMPLETE** | Guided five-step workflow wizard, live service-health monitoring, persistent workflow history, records lookup, reconciliation queue, public GitHub Pages demo, 33/33 tests passing |
 | Copilot/RAG Service | **COMPLETE** | Deterministic local policy-aware retrieval, cited answer drafts, explicit non-adjudication disclaimer, and human approval boundary |
 | Platform Eventing | **AVAILABLE** | Isolated PostgreSQL transactional outbox, idempotent append, readiness, and retryable delivery abstraction. Producers are not yet wired into the Policy, Claims, and Orchestrator transactions — see [services/eventing/README.md](services/eventing/README.md) |
 
@@ -71,34 +94,39 @@ The [Policy Service specification](specs/001-policy-service-management/) is the 
 
 The [Claims Service specification](specs/002-claims-service-management/) follows the same workflow and additionally demonstrates cross-service integration: [spec.md](specs/002-claims-service-management/spec.md), [plan.md](specs/002-claims-service-management/plan.md), [tasks.md](specs/002-claims-service-management/tasks.md), and the pinned [OpenAPI contract](specs/002-claims-service-management/contracts/claims-api.yaml).
 
-## Architecture
+The multi-service monorepo keeps services independently deployable while sharing one delivery process, constitution, and CI boundary.
+
+### Claim submission workflow
+
+The Orchestrator coordinates a two-step saga. Each step is persisted, so a partial failure is recoverable rather than silently lost:
 
 ```mermaid
-flowchart LR
-		UI["Operations Portal\nCOMPLETE"] --> ORCH["Orchestrator\nIN PROGRESS"]
-		ORCH --> POLICY["Policy Service\nCOMPLETE"]
-		ORCH --> CLAIMS["Claims Service\nCOMPLETE"]
-		ORCH --> PAYMENTS["Payments Integration\nCOMPLETE"]
-		LEGACY["Legacy Adapter\nCOMPLETE"] --> ORCH
-		DOCS["Document Intelligence\nCOMPLETE"] --> ORCH
-		COPILOT["Copilot/RAG Service\nCOMPLETE"] --> DOCS
-		EVENTS["Platform Eventing\nAVAILABLE"] --> ORCH
-		KEYCLOAK["Keycloak"] --> POLICY
-		POLICY --> POLICYDB[(Policy PostgreSQL)]
-		CLAIMS --> CLAIMSDB[(Claims DB)]
+sequenceDiagram
+    participant Operator as Operations Portal
+    participant Orch as Orchestrator
+    participant Policy as Policy Service
+    participant Claims as Claims Service
 
-		classDef complete fill:#dcfce7,stroke:#15803d,color:#14532d
-		classDef inprogress fill:#fef3c7,stroke:#d97706,color:#78350f
-		classDef planned fill:#e5e7eb,stroke:#6b7280,color:#374151
-		class POLICY complete
-		class CLAIMS complete
-		class KEYCLOAK,POLICYDB,CLAIMSDB planned
-		class PAYMENTS,LEGACY complete
-		class UI,DOCS,COPILOT complete
-		class ORCH inprogress
+    Operator->>Orch: POST /workflows/claims (Idempotency-Key)
+    Orch->>Orch: Persist workflow (state: pending)
+    Orch->>Policy: Verify policy is active
+    alt Policy inactive
+        Policy-->>Orch: Rejected
+        Orch-->>Operator: state: failed (policy_not_active)
+    else Policy active
+        Policy-->>Orch: Verified
+        Orch->>Claims: Create claim
+        alt Claims unreachable
+            Claims-->>Orch: Timeout / 5xx
+            Orch-->>Operator: state: reconciliation_required
+        else Claim created
+            Claims-->>Orch: Claim ID
+            Orch-->>Operator: state: completed
+        end
+    end
 ```
 
-The multi-service monorepo keeps services independently deployable while sharing one delivery process, constitution, and CI boundary.
+A repeated `Idempotency-Key` returns the original workflow instead of creating a duplicate; the same key with a changed payload is rejected with `409 Conflict`. Workflows left in `reconciliation_required` surface in the portal's reconciliation queue with their failure category and an operator retry action.
 
 The Platform Eventing service runs at `http://localhost:8008`; see
 [services/eventing/README.md](services/eventing/README.md) for its envelope, schema,
@@ -137,11 +165,11 @@ node scripts/capture-demo.mjs      # writes screenshots and GIF frames
 python scripts/build-demo-gif.py   # assembles docs/demo/operations-portal-demo.gif
 ```
 
-## Quickstart
+## Running the platform locally
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Charan-Hari/insurance-claims-orchestration-platform?quickstart=1)
 
-Clone the repository or open it in GitHub Codespaces, then start the local Policy Service stack:
+Clone the repository or open it in GitHub Codespaces, then start the full stack:
 
 ```sh
 git clone https://github.com/Charan-Hari/insurance-claims-orchestration-platform.git
@@ -151,6 +179,20 @@ docker compose up --build
 ```
 
 The stack runs PostgreSQL 16, Keycloak in development mode, Policy Service, Claims Service, Orchestrator, Legacy Adapter, Payments Integration, Document Intelligence, Copilot/RAG, Platform Eventing, and the Operations Portal. Each Python service applies Alembic migrations before starting Uvicorn; local SQLite services use persistent volumes. For full Keycloak realm, client, and JWT setup, see [services/policy/README.md](services/policy/README.md).
+
+Once the stack is healthy, the Operations Console is at **http://localhost:3000** and reports each service's live health in its header.
+
+| Service | URL |
+| --- | --- |
+| Operations Portal | http://localhost:3000 |
+| Policy Service | http://localhost:8000 |
+| Claims Service | http://localhost:8001 |
+| Orchestrator | http://localhost:8002 |
+| Legacy Adapter | http://localhost:8003 |
+| Payments Integration | http://localhost:8004 |
+| Document Intelligence | http://localhost:8005 |
+| Copilot/RAG Service | http://localhost:8006 |
+| Platform Eventing | http://localhost:8008 |
 
 With a valid Keycloak token in `TOKEN`, the three primary policy operations are:
 
@@ -184,7 +226,7 @@ Every AI-generated change was reviewed before commit. The [commit history](https
 | --- | --- | --- | --- | --- |
 | Policy Service | Python 3.12 | FastAPI, SQLAlchemy 2.0 async, Alembic | PostgreSQL 16, Keycloak | Complete |
 | Claims Service | Python 3.12 | FastAPI, SQLAlchemy 2.0 async, Alembic | PostgreSQL 16, Keycloak, live HTTP call to Policy Service | Complete |
-| Orchestrator | Python 3.12 | FastAPI | PostgreSQL, Policy and Claims APIs, saga coordination | In progress |
+| Orchestrator | Python 3.12 | FastAPI | PostgreSQL, Policy and Claims APIs, saga coordination | Complete |
 | Legacy Adapter | Python 3.12 | FastAPI, SQLAlchemy 2.0 async, Alembic | PostgreSQL, Keycloak, legacy claim feeds | Complete |
 | Payments Integration | TypeScript | Node.js HTTP service | Provider-neutral payment API, SQLite idempotency store | Complete |
 | Document Intelligence | Python 3.12 | FastAPI | Local document storage, SQLite metadata, deterministic review rules | Complete |
@@ -194,7 +236,11 @@ Every AI-generated change was reviewed before commit. The [commit history](https
 
 ## Demo
 
-TODO: Add a recorded terminal walkthrough using asciinema or a GIF showing the Compose stack, Keycloak JWT flow, policy lifecycle, and audit record.
+The [live demo](https://charan-hari.github.io/insurance-claims-orchestration-platform/) publishes the Operations Console to GitHub Pages on every push to `main`. It has no backend: service calls are simulated in the browser using the orchestrator's own saga semantics, so the guided workflow, saga timeline, history, and reconciliation queue all behave as they do against the live stack. The environment pill in the header reads **Demo** to make this explicit.
+
+To exercise the real services instead, follow [Running the platform locally](#running-the-platform-locally) — the same console then talks to all eight services over HTTP.
+
+The recorded walkthrough above is reproducible; see [Regenerating the demo assets](#regenerating-the-demo-assets).
 
 ## License
 
