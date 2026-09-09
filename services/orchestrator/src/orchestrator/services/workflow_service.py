@@ -14,6 +14,8 @@ from orchestrator.schemas.workflow import (
     WorkflowState,
 )
 from orchestrator.services import claims_client, policy_client
+from orchestrator.services.claims_client import ClaimsServiceRejected, ClaimsServiceUnavailable
+from orchestrator.services.policy_client import PolicyNotActive, PolicyNotFound, PolicyServiceUnavailable
 
 
 class WorkflowConflict(ValueError):
@@ -119,7 +121,7 @@ async def start_claim_workflow(
         now = datetime.now(timezone.utc)
         workflow.steps[0].completed_at = now
         workflow.steps[1].completed_at = now
-    except Exception as exc:
+    except (ClaimsServiceRejected, ClaimsServiceUnavailable, PolicyNotActive, PolicyNotFound, PolicyServiceUnavailable) as exc:
         workflow.state = WorkflowState.FAILED
         workflow.failure_category = type(exc).__name__
         for step in workflow.steps:
@@ -200,7 +202,7 @@ async def retry_claim_workflow(
         for step in workflow.steps:
             step.state = StepState.SUCCEEDED
             step.completed_at = datetime.now(timezone.utc)
-    except Exception as exc:
+    except (ClaimsServiceRejected, ClaimsServiceUnavailable, PolicyNotActive, PolicyNotFound, PolicyServiceUnavailable) as exc:
         workflow.state = WorkflowState.FAILED
         workflow.failure_category = type(exc).__name__
         for step in workflow.steps:
