@@ -5,20 +5,26 @@ __pycache__/
 *.pyc
 *.egg-info/
 .pytest_cache/
+.ruff_cache/
 .venv/
 venv/
+
+# Environment and secrets
 *.env
 .env
 .env.*
 !.env.example
-dist/
-data/
 
-# Python
-__pycache__/
-*.pyc
-*.egg-info/
-.pytest_cache/
-.venv/
-venv/
-*.env
+# Node
+node_modules/
+
+# Build output and local data
+dist/
+build/
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated demo frames (the assembled GIF is committed)
+docs/demo/frames/

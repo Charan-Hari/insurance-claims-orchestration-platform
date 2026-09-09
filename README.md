@@ -5,6 +5,10 @@
 
 An insurance claims orchestration platform built with spec-driven development (GitHub Spec-Kit), where AI coding agents direct implementation under human review.
 
+![Operations Portal walkthrough](docs/demo/operations-portal-demo.gif)
+
+*The Operations Console taking a claim through the guided five-step workflow, then the resulting saga timeline, history, and reconciliation queue. See [docs/demo/](docs/demo/) for full-resolution screenshots.*
+
 ## Why this exists
 
 This project demonstrates enterprise-grade delivery practices for AI-assisted engineering: specifications come before code, constitution-enforced quality gates guide implementation, and every AI-generated change is reviewed by a human before commit. State-changing policy operations also maintain an auditable trail.
@@ -15,13 +19,53 @@ This project demonstrates enterprise-grade delivery practices for AI-assisted en
 | --- | --- | --- |
 | Policy Service | **COMPLETE** | All 3 user stories, 7 functional requirements, 21/21 tests passing, Keycloak RBAC, atomic audit trail, structured logging, Docker Compose runtime |
 | Claims Service | **COMPLETE** | All 3 user stories, 8 functional requirements, 22/22 tests passing, resilient cross-service call to Policy Service (timeout+retry+backoff), atomic audit trail, structured logging, Docker Compose runtime, verified live end-to-end cross-service proof |
-| Orchestrator | **IN PROGRESS** | Workflow orchestration, idempotency, retries, structured logging, Docker Compose live proof |
+| Orchestrator | **COMPLETE** | Saga workflow across Policy and Claims, idempotent replay, changed-payload conflict detection, bounded retries, reconciliation-required state, workflow audit events, verified live end-to-end run |
 | Legacy Adapter | **COMPLETE** | Idempotent legacy claim ingestion, PostgreSQL persistence, Keycloak auth, health/readiness, Docker Compose |
 | Payments Integration | **COMPLETE** | Provider-neutral authorize/capture/refund API, idempotency persistence, deterministic local provider, structured logs, Docker runtime |
 | Document Intelligence | **COMPLETE** | Secure local document storage, checksum/idempotency, policy-aware search, explainable review, human approval workflow |
-| Operations Portal | **COMPLETE** | Accessible TypeScript SPA for workflow, policy, claims, payments, legacy, audit, and reconciliation operations |
+| Operations Portal | **COMPLETE** | Guided five-step workflow wizard, live service-health monitoring, persistent workflow history, records lookup, reconciliation queue, 28/28 tests passing |
 | Copilot/RAG Service | **COMPLETE** | Deterministic local policy-aware retrieval, cited answer drafts, explicit non-adjudication disclaimer, and human approval boundary |
-| Platform Eventing | **AVAILABLE** | Isolated PostgreSQL transactional outbox, idempotent append, readiness, and retryable delivery abstraction |
+| Platform Eventing | **AVAILABLE** | Isolated PostgreSQL transactional outbox, idempotent append, readiness, and retryable delivery abstraction. Producers are not yet wired into the Policy, Claims, and Orchestrator transactions — see [services/eventing/README.md](services/eventing/README.md) |
+
+### Verified end-to-end evidence
+
+Captured against the full Compose stack running in GitHub Codespaces:
+
+| Behaviour | Verification | Result |
+| --- | --- | --- |
+| Authentication | Keycloak password grant for `demo-agent` in the `policy` realm | Token issued, RBAC enforced |
+| Policy lifecycle | `POST /policies` then `PATCH /policies/{id}/status` | `draft → pending_underwriting → active` |
+| Orchestrated workflow | `POST /workflows/claims` | `201` — workflow `completed`, both saga steps `succeeded` |
+| Idempotent replay | Same `Idempotency-Key` and payload resubmitted | Same workflow and claim returned, no duplicate created |
+| Conflict protection | Same `Idempotency-Key` with a changed payload | `409 Conflict` |
+| Unauthenticated access | Request without a valid bearer token | `401 Unauthorized` |
+
+## Architecture
+
+```mermaid
+flowchart LR
+		UI["Operations Portal\nCOMPLETE"] --> ORCH["Orchestrator\nCOMPLETE"]
+		ORCH --> POLICY["Policy Service\nCOMPLETE"]
+		ORCH --> CLAIMS["Claims Service\nCOMPLETE"]
+		ORCH --> PAYMENTS["Payments Integration\nCOMPLETE"]
+		LEGACY["Legacy Adapter\nCOMPLETE"] --> ORCH
+		DOCS["Document Intelligence\nCOMPLETE"] --> ORCH
+		COPILOT["Copilot/RAG Service\nCOMPLETE"] --> DOCS
+		EVENTS["Platform Eventing\nAVAILABLE"] --> ORCH
+		KEYCLOAK["Keycloak"] --> POLICY
+		POLICY --> POLICYDB[(Policy PostgreSQL)]
+		CLAIMS --> CLAIMSDB[(Claims DB)]
+
+		classDef complete fill:#dcfce7,stroke:#15803d,color:#14532d
+		classDef inprogress fill:#fef3c7,stroke:#d97706,color:#78350f
+		classDef planned fill:#e5e7eb,stroke:#6b7280,color:#374151
+		class POLICY complete
+		class CLAIMS complete
+		class KEYCLOAK,POLICYDB,CLAIMSDB planned
+		class PAYMENTS,LEGACY complete
+		class UI,DOCS,COPILOT,ORCH complete
+		class EVENTS inprogress
+```
 
 The [Policy Service specification](specs/001-policy-service-management/) is the reference example of the complete Spec-Kit workflow, including [spec.md](specs/001-policy-service-management/spec.md), [plan.md](specs/001-policy-service-management/plan.md), [tasks.md](specs/001-policy-service-management/tasks.md), and the pinned [OpenAPI contract](specs/001-policy-service-management/contracts/policy-api.yaml).
 
@@ -59,6 +103,39 @@ The multi-service monorepo keeps services independently deployable while sharing
 The Platform Eventing service runs at `http://localhost:8008`; see
 [services/eventing/README.md](services/eventing/README.md) for its envelope, schema,
 worker adapter, and follow-up integration points.
+
+## Operations Console
+
+The [Operations Portal](apps/operations-portal/) is the human control surface for the platform.
+
+| Capability | Behaviour |
+| --- | --- |
+| Guided workflow | Five explicit steps — policy, incident, assessment, review, result — with per-step validation and a numbered progress indicator |
+| Live service health | Every service `/health` endpoint is polled continuously and reported in the header and on the dashboard |
+| Workflow history | Live runs persist across reloads; bundled sample runs are always present so lookups are never empty |
+| Records lookup | Policies and claims for a policyholder, served by the Policy and Claims services |
+| Reconciliation | Failed and reconciliation-required workflows with failure category, retry count, and an operator retry action |
+| Resilience | Request timeouts, generated idempotency keys, typed API errors with request IDs, and full HTML escaping |
+
+<p align="center">
+	<img src="docs/demo/01-dashboard.png" alt="Operations dashboard" width="49%">
+	<img src="docs/demo/05-step4-review.png" alt="Guided workflow review step" width="49%">
+</p>
+<p align="center">
+	<img src="docs/demo/06-step5-result.png" alt="Orchestration result timeline" width="49%">
+	<img src="docs/demo/09-reconciliation.png" alt="Reconciliation queue" width="49%">
+</p>
+
+### Regenerating the demo assets
+
+The walkthrough is reproducible. Downstream responses are stubbed at the network layer so the recording is deterministic:
+
+```sh
+cd apps/operations-portal && npm install && npm run dev -- --port 5199
+# in a second shell, from the repository root
+node scripts/capture-demo.mjs      # writes screenshots and GIF frames
+python scripts/build-demo-gif.py   # assembles docs/demo/operations-portal-demo.gif
+```
 
 ## Quickstart
 
