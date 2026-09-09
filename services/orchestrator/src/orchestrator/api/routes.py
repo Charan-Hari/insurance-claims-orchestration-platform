@@ -8,7 +8,9 @@ from orchestrator.db.session import get_db_session
 from orchestrator.schemas.workflow import ClaimWorkflowCreate, WorkflowRead
 from orchestrator.services.workflow_service import (
     WorkflowConflict,
+    WorkflowNotRetryable,
     get_workflow,
+    retry_claim_workflow,
     start_claim_workflow,
 )
 
@@ -62,3 +64,26 @@ async def get_workflow_endpoint(
         raise HTTPException(404, "Workflow not found")
 
     return workflow
+
+
+@router.post(
+    "/workflows/{workflow_id}/retry",
+    response_model=WorkflowRead,
+    responses={403: {}, 404: {}, 409: {}},
+)
+async def retry_workflow_endpoint(
+    workflow_id: uuid.UUID,
+    session=Depends(get_db_session),
+    current_user: CurrentUser = Depends(workflow_authorization),
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+) -> WorkflowRead:
+    authorization = None
+    if credentials:
+        authorization = f"{credentials.scheme} {credentials.credentials}"
+
+    try:
+        return await retry_claim_workflow(session, workflow_id, authorization)
+    except KeyError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except WorkflowNotRetryable as exc:
+        raise HTTPException(409, str(exc)) from exc

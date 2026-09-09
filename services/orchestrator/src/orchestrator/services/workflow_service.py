@@ -71,6 +71,7 @@ async def start_claim_workflow(
         policyholder_id=data.policyholder_id,
         state=WorkflowState.PENDING,
         retry_count=0,
+        request_payload=data.model_dump(mode="json"),
     )
     workflow.steps = [
         WorkflowStep(name="policy_verification", state=StepState.PENDING),
@@ -133,3 +134,79 @@ async def start_claim_workflow(
 
 async def get_workflow(session: AsyncSession, workflow_id: uuid.UUID) -> Workflow | None:
     return await session.get(Workflow, workflow_id)
+
+
+MAX_RETRY_COUNT = 3
+
+
+async def retry_claim_workflow(
+    session: AsyncSession,
+    workflow_id: uuid.UUID,
+    authorization: str | None,
+) -> Workflow:
+    workflow = await session.get(Workflow, workflow_id)
+    if workflow is None:
+        raise KeyError("Workflow not found")
+
+    if workflow.state == WorkflowState.COMPLETED:
+        return workflow
+
+    if workflow.state != WorkflowState.FAILED:
+        raise WorkflowNotRetryable("Only failed workflows can be retried")
+
+    if workflow.failure_category not in {
+        "ClaimsServiceUnavailable",
+        "PolicyServiceUnavailable",
+    }:
+        raise WorkflowNotRetryable("Workflow failure is not retryable")
+
+    if workflow.retry_count >= MAX_RETRY_COUNT:
+        raise WorkflowNotRetryable("Workflow retry limit exceeded")
+
+    idempotency_result = await session.execute(
+        select(WorkflowIdempotencyKey).where(
+            WorkflowIdempotencyKey.workflow_id == workflow_id
+        )
+    )
+    idempotency_record = idempotency_result.scalar_one_or_none()
+    if idempotency_record is None or workflow.request_payload is None:
+        raise WorkflowNotRetryable("Workflow cannot be safely retried")
+
+    data = ClaimWorkflowCreate.model_validate(workflow.request_payload)
+    workflow.retry_count += 1
+    workflow.state = WorkflowState.PENDING
+    workflow.failure_category = None
+
+    for step in workflow.steps:
+        step.state = StepState.PENDING
+        step.error_category = None
+        step.started_at = None
+        step.completed_at = None
+
+    try:
+        await policy_client.get_policy(data.policy_id, authorization)
+        claim = await claims_client.create_claim(
+            policy_id=data.policy_id,
+            policyholder_id=data.policyholder_id,
+            claim_amount=data.claim_amount,
+            incident_date=data.incident_date,
+            description=data.description,
+            adjuster_notes=data.adjuster_notes,
+            authorization=authorization,
+            idempotency_key=idempotency_record.idempotency_key,
+        )
+        workflow.claim_id = uuid.UUID(claim["id"])
+        workflow.state = WorkflowState.COMPLETED
+        for step in workflow.steps:
+            step.state = StepState.SUCCEEDED
+            step.completed_at = datetime.now(timezone.utc)
+    except Exception as exc:
+        workflow.state = WorkflowState.FAILED
+        workflow.failure_category = type(exc).__name__
+        for step in workflow.steps:
+            step.state = StepState.FAILED
+            step.error_category = type(exc).__name__
+
+    await session.commit()
+    await session.refresh(workflow)
+    return workflow
