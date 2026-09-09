@@ -1,0 +1,26 @@
+name: Orchestrator CI
+
+on:
+  push:
+    paths:
+      - "services/orchestrator/**"
+      - ".github/workflows/orchestrator-ci.yml"
+  pull_request:
+    paths:
+      - "services/orchestrator/**"
+      - ".github/workflows/orchestrator-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -e "services/orchestrator[test]"
+      - name: Run tests
+        run: PYTHONPATH=services/orchestrator/src pytest -q services/orchestrator/tests
+      - name: Compile sources
+        run: PYTHONPATH=services/orchestrator/src python -m compileall -q services/orchestrator/src
