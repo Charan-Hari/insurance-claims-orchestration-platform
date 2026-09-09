@@ -42,11 +42,11 @@
 
 ## User Story 3: Retry Failed Workflow
 
-- [ ] T029 Write retryability and bounded-retry tests.
-- [ ] T030 Write retry contract tests.
+- [x] T029 Write retryability and bounded-retry tests.
+- [x] T030 Write retry contract tests.
 - [ ] T031 Write reconciliation-required integration tests.
 - [ ] T032 Implement retry and reconciliation service logic.
-- [ ] T033 Implement `POST /workflows/{workflow_id}/retry`.
+- [x] T033 Implement `POST /workflows/{workflow_id}/retry`.
 
 ## Phase 4: Polish and Integration
 
