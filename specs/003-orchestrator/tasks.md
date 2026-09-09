@@ -5,7 +5,7 @@
 - [x] T001 Create `services/orchestrator` package and project metadata.
 - [x] T002 Add Dockerfile and `.dockerignore`.
 - [x] T003 Add test, unit, contract, and integration directories.
-- [ ] T004 Add health and readiness endpoints.
+- [x] T004 Add health and readiness endpoints.
 - [ ] T005 Add structured JSON logging and request IDs.
 
 ## Phase 2: Foundation
@@ -50,12 +50,12 @@
 
 ## Phase 4: Polish and Integration
 
-- [ ] T034 Export the pinned OpenAPI contract.
-- [ ] T035 Add `services/orchestrator/README.md`.
+- [x] T034 Export the pinned OpenAPI contract.
+- [x] T035 Add `services/orchestrator/README.md`.
 - [x] T036 Add Orchestrator to root Docker Compose.
-- [ ] T037 Add Orchestrator GitHub Actions CI workflow.
+- [x] T037 Add Orchestrator GitHub Actions CI workflow.
 - [x] T038 Run the full Orchestrator test suite.
-- [ ] T039 Run a live Docker Compose workflow through Policy, Claims, and
+- [x] T039 Run a live Docker Compose workflow through Policy, Claims, and
       Orchestrator.
 - [ ] T040 Verify timeout, duplicate-request, retry, and reconciliation paths
       against live service boundaries.
