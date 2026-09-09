@@ -29,7 +29,7 @@ class Workflow(Base):
     )
 
     steps: Mapped[list["WorkflowStep"]] = relationship(
-        back_populates="workflow", cascade="all, delete-orphan", order_by="WorkflowStep.created_at"
+        back_populates="workflow", cascade="all, delete-orphan", order_by="WorkflowStep.created_at", lazy="selectin"
     )
 
 
