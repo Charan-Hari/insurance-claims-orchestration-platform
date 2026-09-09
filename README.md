@@ -47,7 +47,7 @@ This project demonstrates enterprise-grade delivery practices for AI-assisted en
 | Payments Integration | **COMPLETE** | Provider-neutral authorize/capture/refund API, idempotency persistence, deterministic local provider, structured logs, Docker runtime |
 | Document Intelligence | **COMPLETE** | Secure local document storage, checksum/idempotency, policy-aware search, explainable review, human approval workflow |
 | Operations Portal | **COMPLETE** | Guided five-step workflow wizard, live service-health monitoring, persistent workflow history, records lookup, reconciliation queue, public GitHub Pages demo, 33/33 tests passing |
-| Copilot/RAG Service | **COMPLETE** | Deterministic local policy-aware retrieval, cited answer drafts, explicit non-adjudication disclaimer, and human approval boundary |
+| Copilot/RAG Service | **COMPLETE** | Policy-aware retrieval, cited answer drafts, pluggable generator (offline by default, opt-in hosted LLM with audited degradation), explicit non-adjudication disclaimer, and human approval boundary |
 | Platform Eventing | **AVAILABLE** | Isolated PostgreSQL transactional outbox, idempotent append, readiness, and retryable delivery abstraction. Producers are not yet wired into the Policy, Claims, and Orchestrator transactions — see [services/eventing/README.md](services/eventing/README.md) |
 
 ### Verified end-to-end evidence
@@ -220,6 +220,31 @@ Feature work follows the Spec-Kit workflow: **constitution -> specify -> clarify
 
 Every AI-generated change was reviewed before commit. The [commit history](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/commits/main/) contains the implementation sequence and detailed rationale in the commit messages.
 
+## AI assistance and human oversight
+
+The Copilot/RAG service drafts answers for claim handlers, and it is deliberately built so
+that AI output can never become a decision on its own:
+
+| Control | Implementation |
+| --- | --- |
+| Grounded or refused | Answers use only retrieved, policy-scoped passages; empty retrieval returns an explicit refusal rather than an inference |
+| Mandatory human approval | Drafts are created `pending`; only the authenticated approval endpoint can change that, and it records the deciding principal |
+| Citations | Every draft carries knowledge IDs, titles, scores, and sources |
+| Tenant scoping | Retrieval is filtered by `policy_id` / `claim_id` |
+| Provenance | Each draft records which generator produced it and whether it was degraded |
+| Non-adjudication disclaimer | Attached to every draft and approval response |
+
+The generator itself is pluggable. The default is **deterministic and fully offline**, so
+the platform clones and runs with no API key, no account, and no per-request cost, and CI
+stays hermetic. A hosted model (Gemini or OpenAI) is opt-in through
+`COPILOT_LLM_PROVIDER`. Free-tier hosted APIs commonly reserve the right to train on
+submitted content, so the default path never sends claim data off-box.
+
+Because approval is mandatory, a provider outage is a quality problem rather than a safety
+one: hosted failures degrade to the deterministic generator and mark the draft
+`degraded`, instead of blocking the claim handler. See
+[services/copilot-rag/README.md](services/copilot-rag/README.md).
+
 ## Tech Stack
 
 | Service | Language | Framework / Runtime | Data / Integration | Status |
@@ -231,7 +256,7 @@ Every AI-generated change was reviewed before commit. The [commit history](https
 | Payments Integration | TypeScript | Node.js HTTP service | Provider-neutral payment API, SQLite idempotency store | Complete |
 | Document Intelligence | Python 3.12 | FastAPI | Local document storage, SQLite metadata, deterministic review rules | Complete |
 | Operations Portal | TypeScript | Vite SPA | Policy, Claims, Orchestrator, Legacy, Payments, and Document APIs | Complete |
-| Copilot/RAG Service | Python 3.12 | FastAPI, deterministic token retrieval | SQLite local knowledge store | Complete |
+| Copilot/RAG Service | Python 3.12 | FastAPI, token retrieval, pluggable generator | SQLite knowledge store, optional Gemini/OpenAI | Complete |
 | Platform Eventing | Python 3.12 | FastAPI, SQLAlchemy async, outbox worker | PostgreSQL transactional outbox, publisher adapter | Available |
 
 ## Demo

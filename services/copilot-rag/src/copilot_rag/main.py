@@ -14,6 +14,8 @@ from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
+from copilot_rag.generator import HostedGenerator, build_generator, generate_with_fallback
+
 DISCLAIMER = "This is an assistive draft, not an adjudication or coverage decision. A qualified human must review and approve it."
 
 
@@ -33,6 +35,13 @@ def db() -> sqlite3.Connection:
         id TEXT PRIMARY KEY, question TEXT NOT NULL, policy_id TEXT, claim_id TEXT,
         answer TEXT NOT NULL, citations TEXT NOT NULL, status TEXT NOT NULL,
         reviewed_by TEXT, reviewer_note TEXT, created_at TEXT NOT NULL, decided_at TEXT)""")
+    # Generator provenance was added after the initial schema; existing databases are
+    # migrated in place so a redeploy does not lose previously recorded drafts.
+    existing = {row["name"] for row in conn.execute("PRAGMA table_info(drafts)")}
+    if "generator" not in existing:
+        conn.execute("ALTER TABLE drafts ADD COLUMN generator TEXT NOT NULL DEFAULT 'deterministic'")
+    if "degraded" not in existing:
+        conn.execute("ALTER TABLE drafts ADD COLUMN degraded INTEGER NOT NULL DEFAULT 0")
     conn.commit()
     return conn
 
@@ -170,22 +179,22 @@ def retrieve_endpoint(
 @app.post("/drafts", status_code=201)
 def create_draft(request: DraftIn, _: str = Depends(require_auth)):
     matches = retrieve(request.question, request.policy_id, request.claim_id, request.top_k)
-    if matches:
-        bullets = " ".join(f"[{item['id']}] {item['content']}" for item in matches)
-        answer = f"Based on the retrieved knowledge, {bullets}"
-    else:
-        answer = "No matching, policy-scoped knowledge was found. Do not infer an answer; obtain additional evidence."
+    result = generate_with_fallback(build_generator(), request.question, matches)
     draft_id = str(uuid.uuid4())
     citations = [{"knowledge_id": item["id"], "title": item["title"], "score": item["score"],
                   "source": item["source"]} for item in matches]
     created = now()
     with db() as conn:
-        conn.execute("INSERT INTO drafts VALUES (?, ?, ?, ?, ?, ?, 'pending', NULL, NULL, ?, NULL)",
-                     (draft_id, request.question, request.policy_id, request.claim_id,
-                      answer, repr(citations), created))
-    return {"id": draft_id, "question": request.question, "answer": answer,
+        conn.execute(
+            """INSERT INTO drafts (id, question, policy_id, claim_id, answer, citations,
+               status, reviewed_by, reviewer_note, created_at, decided_at, generator, degraded)
+               VALUES (?, ?, ?, ?, ?, ?, 'pending', NULL, NULL, ?, NULL, ?, ?)""",
+            (draft_id, request.question, request.policy_id, request.claim_id,
+             result.answer, repr(citations), created, result.provider, int(result.degraded)))
+    return {"id": draft_id, "question": request.question, "answer": result.answer,
             "citations": citations, "disclaimer": DISCLAIMER, "approval_required": True,
-            "status": "pending", "created_at": created}
+            "status": "pending", "created_at": created, "generator": result.provider,
+            "degraded": result.degraded, "degraded_reason": result.degraded_reason}
 
 
 @app.post("/drafts/{draft_id}/approval")

@@ -182,6 +182,9 @@ services:
     environment:
       COPILOT_RAG_DB_PATH: /var/lib/copilot-rag/copilot-rag.db
       COPILOT_RAG_API_KEY: ${COPILOT_RAG_API_KEY:-local-development-key}
+      COPILOT_LLM_PROVIDER: ${COPILOT_LLM_PROVIDER:-deterministic}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     volumes:
       - copilot-rag-data:/var/lib/copilot-rag
     ports:

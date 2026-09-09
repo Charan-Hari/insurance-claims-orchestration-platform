@@ -1,4 +1,5 @@
 import copilot_rag.main as service
+import httpx
 from fastapi.testclient import TestClient
 
 
@@ -34,3 +35,31 @@ def test_auth_and_policy_scope(tmp_path, monkeypatch):
     h = {"X-API-Key": "test-key"}
     c.post("/knowledge", headers=h, json={"title": "A", "content": "limit 1", "policy_id": "P1"})
     assert c.get("/retrieve?q=limit&policy_id=P2", headers=h).json()["results"] == []
+
+
+def test_draft_records_generator_provenance(tmp_path, monkeypatch):
+    """Drafts must state which generator produced them, for audit."""
+    c = client(tmp_path, monkeypatch)
+    h = {"X-API-Key": "test-key"}
+    c.post("/knowledge", headers=h, json={"title": "A", "content": "limit 5000", "policy_id": "P1"})
+    body = c.post("/drafts", headers=h, json={"question": "limit?", "policy_id": "P1"}).json()
+    assert body["generator"] == "deterministic"
+    assert body["degraded"] is False
+
+
+def test_draft_reports_degradation_when_provider_fails(tmp_path, monkeypatch):
+    """A hosted-provider outage still returns a usable, clearly-marked draft."""
+    c = client(tmp_path, monkeypatch)
+    h = {"X-API-Key": "test-key"}
+    c.post("/knowledge", headers=h, json={"title": "A", "content": "limit 5000", "policy_id": "P1"})
+
+    failing = service.HostedGenerator(
+        "gemini", "k", transport=httpx.MockTransport(lambda r: httpx.Response(503))
+    )
+    monkeypatch.setattr(service, "build_generator", lambda: failing)
+
+    body = c.post("/drafts", headers=h, json={"question": "limit?", "policy_id": "P1"}).json()
+    assert body["degraded"] is True
+    assert body["generator"] == "deterministic"
+    assert "limit 5000" in body["answer"]
+    assert body["approval_required"] is True
