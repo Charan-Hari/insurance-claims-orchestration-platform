@@ -17,3 +17,5 @@ def test_workflow_endpoints_are_documented() -> None:
     assert "/workflows/{workflow_id}" in schema["paths"]
     assert "post" in schema["paths"]["/workflows/claims"]
     assert "get" in schema["paths"]["/workflows/{workflow_id}"]
+    assert "/workflows/{workflow_id}/retry" in schema["paths"]
+    assert "post" in schema["paths"]["/workflows/{workflow_id}/retry"]
