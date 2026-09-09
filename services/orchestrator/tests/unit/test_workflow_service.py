@@ -3,7 +3,7 @@ from datetime import date
 from decimal import Decimal
 
 from orchestrator.schemas.workflow import ClaimWorkflowCreate, WorkflowState
-from orchestrator.services.workflow_service import request_fingerprint
+from orchestrator.services.workflow_service import MAX_RETRY_COUNT, request_fingerprint
 
 
 def workflow_payload(description: str = "Water damage") -> ClaimWorkflowCreate:
@@ -33,3 +33,7 @@ def test_workflow_state_enum_contains_required_states() -> None:
     assert WorkflowState.COMPLETED.value == "completed"
     assert WorkflowState.FAILED.value == "failed"
     assert WorkflowState.RECONCILIATION_REQUIRED.value == "reconciliation_required"
+
+
+def test_retry_limit_is_bounded() -> None:
+    assert MAX_RETRY_COUNT == 3
