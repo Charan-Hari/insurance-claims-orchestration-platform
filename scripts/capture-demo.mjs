@@ -54,13 +54,13 @@ const POLICIES = [
 ];
 
 const CLAIMS = [
-  { id: CLAIM_ID, policy_id: POLICY_ID, policyholder_id: HOLDER_ID, claim_amount: "1250.00", incident_date: "2026-09-01", description: "Water damage in the basement after a burst supply line.", adjuster_notes: "Plumber invoice verified.", status: "under_review", created_at: now, updated_at: now },
-  { id: "4b0c19aa-7e58-4d43-9cb7-6f8b0e2a4d31", policy_id: "b8241ac7-5f31-4d7a-9f0e-2c65f4a11d02", policyholder_id: HOLDER_ID, claim_amount: "3480.75", incident_date: "2026-08-14", description: "Rear-end collision at a signalled intersection.", adjuster_notes: "Repair estimate approved.", status: "approved", created_at: now, updated_at: now },
-  { id: "9d7f42c1-3a6e-4f90-8bd5-1e4c7a9b2f68", policy_id: POLICY_ID, policyholder_id: HOLDER_ID, claim_amount: "620.00", incident_date: "2026-07-07", description: "Storm damage to exterior fencing and gutters.", adjuster_notes: "Settled and paid via the payments service.", status: "settled", created_at: now, updated_at: now },
-  { id: "6e3b84f0-2c17-4d59-a801-9f5c7b2e40d3", policy_id: "d5062bb8-1c94-4e35-b7f6-08a3e91c5d47", policyholder_id: HOLDER_ID, claim_amount: "1890.40", incident_date: "2026-08-25", description: "Theft of personal electronics during a building break-in.", adjuster_notes: "Police report attached and validated.", status: "under_review", created_at: now, updated_at: now },
-  { id: "8c19d7e5-5b02-4a13-9e64-2d70f8a3c916", policy_id: "b8241ac7-5f31-4d7a-9f0e-2c65f4a11d02", policyholder_id: HOLDER_ID, claim_amount: "245.00", incident_date: "2026-06-05", description: "Windshield chip repair after highway debris impact.", adjuster_notes: "Below deductible threshold.", status: "denied", created_at: now, updated_at: now },
-  { id: "3a5f60b9-8d43-4c27-b0f1-4e92a7c1d508", policy_id: "f1748cd3-6a20-4bb9-8e51-7c93d0f2a865", policyholder_id: HOLDER_ID, claim_amount: "12400.00", incident_date: "2026-04-22", description: "Third-party liability claim following a guest injury.", adjuster_notes: "Legal review completed.", status: "settled", created_at: now, updated_at: now },
-  { id: "7f2e91c4-0a68-4b35-8d17-5c93b6e2f740", policy_id: "c3910fe2-77b4-4f18-8a20-91d0c4be7714", policyholder_id: HOLDER_ID, claim_amount: "4750.25", incident_date: "2026-09-06", description: "Smoke damage to inventory following an adjacent unit fire.", adjuster_notes: "Awaiting fire marshal report.", status: "submitted", created_at: now, updated_at: now },
+  { id: CLAIM_ID, claim_reference: "CLM-2026-004106", policy_id: POLICY_ID, policyholder_id: HOLDER_ID, claim_amount: "1250.00", incident_date: "2026-09-01", description: "Water damage in the basement after a burst supply line.", adjuster_notes: "Plumber invoice verified.", status: "under_review", created_at: now, updated_at: now },
+  { id: "4b0c19aa-7e58-4d43-9cb7-6f8b0e2a4d31", claim_reference: "CLM-2026-004104", policy_id: "b8241ac7-5f31-4d7a-9f0e-2c65f4a11d02", policyholder_id: HOLDER_ID, claim_amount: "3480.75", incident_date: "2026-08-14", description: "Rear-end collision at a signalled intersection.", adjuster_notes: "Repair estimate approved.", status: "approved", created_at: now, updated_at: now },
+  { id: "9d7f42c1-3a6e-4f90-8bd5-1e4c7a9b2f68", claim_reference: "CLM-2026-004102", policy_id: POLICY_ID, policyholder_id: HOLDER_ID, claim_amount: "620.00", incident_date: "2026-07-07", description: "Storm damage to exterior fencing and gutters.", adjuster_notes: "Settled and paid via the payments service.", status: "settled", created_at: now, updated_at: now },
+  { id: "6e3b84f0-2c17-4d59-a801-9f5c7b2e40d3", claim_reference: "CLM-2026-004105", policy_id: "d5062bb8-1c94-4e35-b7f6-08a3e91c5d47", policyholder_id: HOLDER_ID, claim_amount: "1890.40", incident_date: "2026-08-25", description: "Theft of personal electronics during a building break-in.", adjuster_notes: "Police report attached and validated.", status: "under_review", created_at: now, updated_at: now },
+  { id: "8c19d7e5-5b02-4a13-9e64-2d70f8a3c916", claim_reference: "CLM-2026-004101", policy_id: "b8241ac7-5f31-4d7a-9f0e-2c65f4a11d02", policyholder_id: HOLDER_ID, claim_amount: "245.00", incident_date: "2026-06-05", description: "Windshield chip repair after highway debris impact.", adjuster_notes: "Below deductible threshold.", status: "denied", created_at: now, updated_at: now },
+  { id: "3a5f60b9-8d43-4c27-b0f1-4e92a7c1d508", claim_reference: "CLM-2026-004100", policy_id: "f1748cd3-6a20-4bb9-8e51-7c93d0f2a865", policyholder_id: HOLDER_ID, claim_amount: "12400.00", incident_date: "2026-04-22", description: "Third-party liability claim following a guest injury.", adjuster_notes: "Legal review completed.", status: "settled", created_at: now, updated_at: now },
+  { id: "7f2e91c4-0a68-4b35-8d17-5c93b6e2f740", claim_reference: "CLM-2026-004107", policy_id: "c3910fe2-77b4-4f18-8a20-91d0c4be7714", policyholder_id: HOLDER_ID, claim_amount: "4750.25", incident_date: "2026-09-06", description: "Smoke damage to inventory following an adjacent unit fire.", adjuster_notes: "Awaiting fire marshal report.", status: "submitted", created_at: now, updated_at: now },
 ];
 
 /** Serves deterministic responses for every platform endpoint the console calls. */
@@ -110,7 +110,7 @@ async function main() {
   await page.getByRole("button", { name: "Start new workflow" }).click();
   await page.waitForTimeout(400);
   await capture(page, null, 4);
-  await page.getByRole("button", { name: "Use sample claim" }).click();
+  await page.getByRole("button", { name: "Prefill example" }).click();
   await page.waitForTimeout(500);
   await capture(page, "02-step1-policy", 10);
 
@@ -141,7 +141,7 @@ async function main() {
 
   await page.getByRole("button", { name: /^Records/ }).click();
   await page.waitForTimeout(400);
-  await page.getByRole("button", { name: "Use sample ID" }).click();
+  await page.getByRole("button", { name: "Prefill ID" }).click();
   await page.waitForTimeout(900);
   await capture(page, "08-records", 12);
 

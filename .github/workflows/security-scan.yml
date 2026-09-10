@@ -1,0 +1,104 @@
+name: Security Scan
+
+# Enterprise controls the platform claims to care about are only credible if they
+# are enforced automatically. This runs three checks that fail the build:
+#   * secret scanning across the whole history, because a leaked credential is not
+#     fixed by deleting it in a later commit
+#   * static analysis of Python sources for injection, unsafe deserialisation and
+#     weak crypto
+#   * dependency advisories for both ecosystems
+#
+# It also runs on a schedule: a dependency that is clean today can be disclosed
+# tomorrow without anyone touching the repository.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          # Full history: a secret committed and later removed is still exposed.
+          fetch-depth: 0
+
+      - name: Scan history for committed credentials
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  python:
+    name: Python static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install scanners
+        run: python -m pip install --quiet bandit pip-audit
+
+      - name: Scan sources for insecure patterns
+        # Only src/: test fixtures legitimately contain hardcoded sample values
+        # that would otherwise drown real findings in noise. Alembic versions are
+        # excluded because they are static, developer-authored DDL that never
+        # sees request input -- B608 there is always a false positive.
+        run: bandit -q -r services/*/src -ll -x '*/db/migrations/versions/*'
+
+      - name: Audit Python dependencies
+        run: |
+          status=0
+          for service in services/*/; do
+            [ -f "${service}pyproject.toml" ] || continue
+            echo "::group::${service}"
+            pip-audit --progress-spinner off "${service}" || status=1
+            echo "::endgroup::"
+          done
+          exit $status
+
+  javascript:
+    name: JavaScript dependency audit
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        workspace:
+          - apps/operations-portal
+          - services/payments
+    defaults:
+      run:
+        working-directory: ${{ matrix.workspace }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: ${{ matrix.workspace }}/package-lock.json
+
+      - name: Audit production dependencies
+        # Production scope only. Build-tool advisories do not reach a deployed
+        # artefact, and failing on them trains people to ignore this job.
+        run: npm audit --omit=dev --audit-level=moderate

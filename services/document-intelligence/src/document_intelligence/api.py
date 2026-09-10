@@ -91,7 +91,12 @@ async def search_documents(
         clauses.append("claim_id=?"); values.append(claim_id)
     if policy_id:
         clauses.append("policy_id=?"); values.append(policy_id)
-    query = "SELECT * FROM documents" + ((" WHERE " + " AND ".join(clauses)) if clauses else "") + " ORDER BY created_at DESC LIMIT ?"
+    # B608: clauses are fixed literals; every user value is bound below.
+    query = (
+        "SELECT * FROM documents"  # nosec B608
+        + ((" WHERE " + " AND ".join(clauses)) if clauses else "")
+        + " ORDER BY created_at DESC LIMIT ?"
+    )
     values.append(limit)
     with connect() as db:
         rows = db.execute(query, values).fetchall()

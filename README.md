@@ -32,7 +32,9 @@ Around that core flow sit the integrations a real enterprise deployment needs: a
 | Resilience | Timeouts, bounded retries with backoff, and typed error classification on cross-service calls |
 | Security | Keycloak SSO, RBAC by role, JWT audience validation, no credentials in source |
 | Auditability | Append-only audit trails written in the same transaction as the state change |
+| Human-usable identifiers | UUID primary keys keep writes uncoordinated across services, while a `CLM-YYYY-NNNNNN` reference allocated by a Postgres sequence gives operators something speakable |
 | Observability | Structured JSON logs with a request ID propagated across service boundaries |
+| Supply chain | Secret, static-analysis, and dependency scanning gate every push and run weekly |
 | Verification | 100+ automated tests, per-service CI, and live end-to-end evidence captured against the running stack |
 
 ## Why this exists
@@ -44,12 +46,12 @@ This project demonstrates enterprise-grade delivery practices for AI-assisted en
 | Service | Status | Evidence |
 | --- | --- | --- |
 | Policy Service | **COMPLETE** | All 3 user stories, 7 functional requirements, 21/21 tests passing, Keycloak RBAC, atomic audit trail, structured logging, Docker Compose runtime |
-| Claims Service | **COMPLETE** | All 3 user stories, 8 functional requirements, 22/22 tests passing, resilient cross-service call to Policy Service (timeout+retry+backoff), atomic audit trail, structured logging, Docker Compose runtime, verified live end-to-end cross-service proof |
+| Claims Service | **COMPLETE** | All 3 user stories, 8 functional requirements, 35/35 tests passing, resilient cross-service call to Policy Service (timeout+retry+backoff), atomic audit trail, structured logging, Docker Compose runtime, verified live end-to-end cross-service proof |
 | Orchestrator | **COMPLETE** | Saga workflow across Policy and Claims, idempotent replay, changed-payload conflict detection, bounded retries, reconciliation-required state, workflow audit events, verified live end-to-end run |
 | Legacy Adapter | **COMPLETE** | Idempotent legacy claim ingestion, PostgreSQL persistence, Keycloak auth, health/readiness, Docker Compose |
 | Payments Integration | **COMPLETE** | Provider-neutral authorize/capture/refund API, idempotency persistence, deterministic local provider, structured logs, Docker runtime |
 | Document Intelligence | **COMPLETE** | Secure local document storage, checksum/idempotency, policy-aware search, explainable review, human approval workflow |
-| Operations Portal | **COMPLETE** | Guided five-step workflow wizard, live service-health monitoring, persistent workflow history, records lookup, reconciliation queue, public GitHub Pages demo, 33/33 tests passing |
+| Operations Portal | **COMPLETE** | Guided five-step workflow wizard, live service-health monitoring, persistent workflow history, records lookup, reconciliation queue, public GitHub Pages demo, 36/36 tests passing |
 | Copilot/RAG Service | **COMPLETE** | Policy-aware retrieval, cited answer drafts, pluggable generator (offline by default, opt-in hosted LLM with audited degradation), explicit non-adjudication disclaimer, and human approval boundary |
 | Platform Eventing | **AVAILABLE** | Isolated PostgreSQL transactional outbox, idempotent append, readiness, and retryable delivery abstraction. Producers are not yet wired into the Policy, Claims, and Orchestrator transactions — see [services/eventing/README.md](services/eventing/README.md) |
 
@@ -236,11 +238,21 @@ change to one service does not rebuild the others.
 | Payments Service CI | `services/payments` (Node) |
 | Python Services CI | `services/copilot-rag`, `document-intelligence`, `eventing`, `legacy-adapter` (matrix) |
 | Operations Portal Pages | `apps/operations-portal` — tests gate the GitHub Pages deploy |
+| Security Scan | whole repository — secrets, Python static analysis, dependency advisories |
 
 Each Python job installs the service, byte-compiles `src` and `tests`, runs `pytest`, and
 fails on whitespace-damaged patches. **No job is given credentials or a hosted API key**:
 the suites must pass entirely offline, which keeps CI hermetic and continuously proves the
 offline defaults still work.
+
+Security Scan runs on every push and pull request and additionally on a weekly schedule,
+because a dependency that is clean today can be disclosed tomorrow without anyone touching
+the repository. It gates on three things: `gitleaks` over the **full history**, since a
+credential committed and later deleted is still exposed; `bandit` over service sources for
+injection, unsafe deserialisation, and weak crypto; and `pip-audit` plus `npm audit` for
+known advisories. Dependency auditing is scoped to production dependencies — build-tool
+advisories cannot reach a deployed artefact, and failing on them trains reviewers to ignore
+the job.
 
 ## AI assistance and human oversight
 
@@ -261,6 +273,13 @@ the platform clones and runs with no API key, no account, and no per-request cos
 stays hermetic. A hosted model (Gemini or OpenAI) is opt-in through
 `COPILOT_LLM_PROVIDER`. Free-tier hosted APIs commonly reserve the right to train on
 submitted content, so the default path never sends claim data off-box.
+
+Retrieval is deliberately **lexical, not semantic**: passages are scored by token overlap
+against a SQLite knowledge store, with no embedding model or vector index. That keeps the
+service dependency-free and its ranking auditable, which matters more here than recall,
+because the governance boundary above — not the retrieval quality — is what makes the
+output safe to put in front of a claim handler. Swapping in embeddings would change the
+scorer, not the controls.
 
 Because approval is mandatory, a provider outage is a quality problem rather than a safety
 one: hosted failures degrade to the deterministic generator and mark the draft
