@@ -65,15 +65,36 @@ jobs:
         run: bandit -q -r services/*/src -ll -x '*/db/migrations/versions/*'
 
       - name: Audit Python dependencies
+        # PYSEC-2026-1325 (ecdsa, Minerva timing attack on P-256) is accepted, not
+        # ignored by accident:
+        #   * upstream has no fix and has stated side-channel resistance is out of
+        #     scope, so there is no version to upgrade to
+        #   * it arrives transitively via python-jose[cryptography], which every
+        #     service uses only to VERIFY tokens -- the advisory affects signing
+        #     (SigningKey.sign_digest); verification is explicitly unaffected
+        #   * every jwt.decode call pins algorithms=["RS256"], so the ECDSA code
+        #     path is unreachable
+        # Revisit if any service starts issuing tokens or accepts ES* algorithms.
         run: |
           status=0
           for service in services/*/; do
             [ -f "${service}pyproject.toml" ] || continue
             echo "::group::${service}"
-            pip-audit --progress-spinner off "${service}" || status=1
+            pip-audit --progress-spinner off \
+              --ignore-vuln PYSEC-2026-1325 \
+              "${service}" || status=1
             echo "::endgroup::"
           done
           exit $status
+
+      - name: Assert the accepted advisory is still the only one
+        # Guards the exemption above: if the RS256-only assumption is ever broken,
+        # the suppression becomes wrong and this makes that visible in review.
+        run: |
+          if grep -rn 'algorithms=' services/*/src --include='*.py' | grep -v 'RS256'; then
+            echo "::error::A service accepts a non-RS256 algorithm; re-evaluate the PYSEC-2026-1325 exemption."
+            exit 1
+          fi
 
   javascript:
     name: JavaScript dependency audit

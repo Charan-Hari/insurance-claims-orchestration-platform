@@ -254,6 +254,18 @@ known advisories. Dependency auditing is scoped to production dependencies — b
 advisories cannot reach a deployed artefact, and failing on them trains reviewers to ignore
 the job.
 
+One advisory is accepted rather than fixed, and deliberately so.
+**PYSEC-2026-1325** (`ecdsa`, Minerva timing attack on P-256) has **no upstream fix** —
+the maintainers consider side-channel resistance out of scope — so there is no version to
+upgrade to. It reaches the platform transitively through `python-jose[cryptography]`. The
+advisory affects *signing* (`SigningKey.sign_digest`); signature *verification* is
+explicitly unaffected, and these services only ever verify tokens issued by Keycloak. Every
+`jwt.decode` call also pins `algorithms=["RS256"]`, so the ECDSA path is unreachable.
+
+Because a suppression is only safe while its premise holds, the workflow additionally fails
+if any service starts accepting a non-RS256 algorithm — the exemption cannot silently
+outlive the reasoning behind it.
+
 ## AI assistance and human oversight
 
 The Copilot/RAG service drafts answers for claim handlers, and it is deliberately built so
