@@ -6,6 +6,7 @@
 [![Payments Service CI](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/payments-service-ci.yml/badge.svg)](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/payments-service-ci.yml)
 [![Python Services CI](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/python-services-ci.yml/badge.svg)](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/python-services-ci.yml)
 [![Operations Portal Pages](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/operations-portal-pages.yml/badge.svg)](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/operations-portal-pages.yml)
+[![Security Scan](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/security-scan.yml/badge.svg)](https://github.com/Charan-Hari/insurance-claims-orchestration-platform/actions/workflows/security-scan.yml)
 
 An insurance claims orchestration platform built with spec-driven development (GitHub Spec-Kit), where AI coding agents direct implementation under human review.
 
@@ -166,9 +167,15 @@ The walkthrough is reproducible. Downstream responses are stubbed at the network
 ```sh
 cd apps/operations-portal && npm install && npm run dev -- --port 5199
 # in a second shell, from the repository root
+npm install --no-save playwright && npx playwright install chromium
+python -m pip install pillow
 node scripts/capture-demo.mjs      # writes screenshots and GIF frames
 python scripts/build-demo-gif.py   # assembles docs/demo/operations-portal-demo.gif
 ```
+
+The two tooling installs are deliberately not project dependencies: they are only needed to
+regenerate documentation assets, and adding a browser engine to the portal's dependency tree
+would slow every CI install for a task that runs a few times a year.
 
 ## Running the platform locally
 
